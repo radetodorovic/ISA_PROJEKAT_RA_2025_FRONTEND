@@ -1,0 +1,57 @@
+<div class="login-container">
+  <div class="login-form-wrapper">
+    <h1>Login</h1>
+
+    <div *ngIf="errorMessage()" class="error-message">
+      {{ errorMessage() }}
+    </div>
+
+    <form (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input
+          type="email"
+          id="email"
+          [(ngModel)]="email"
+          name="email"
+          [class.error]="hasFieldError('email')"
+          placeholder="your@email.com"
+          [disabled]="isLoading() || isLocked()"
+        />
+        <span *ngIf="hasFieldError('email')" class="field-error">
+          {{ getFieldError('email') }}
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input
+          type="password"
+          id="password"
+          [(ngModel)]="password"
+          name="password"
+          [class.error]="hasFieldError('password')"
+          placeholder="Your password"
+          [disabled]="isLoading() || isLocked()"
+        />
+        <span *ngIf="hasFieldError('password')" class="field-error">
+          {{ getFieldError('password') }}
+        </span>
+      </div>
+
+      <button
+        type="submit"
+        [disabled]="isLoading() || isLocked()"
+        class="submit-btn"
+      >
+        <span *ngIf="!isLoading()">Login</span>
+        <span *ngIf="isLoading()">Loading...</span>
+      </button>
+    </form>
+
+    <p class="register-link">
+      Don't have an account?
+      <a [routerLink]="['/register']">Register here</a>
+    </p>
+  </div>
+</div>

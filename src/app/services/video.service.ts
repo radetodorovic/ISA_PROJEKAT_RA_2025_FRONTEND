@@ -3,18 +3,21 @@ import { HttpClient, HttpEvent, HttpHeaders, HttpRequest } from '@angular/common
 import { Observable } from 'rxjs';
 import { VideoPost, VideoUploadRequest } from '../models/video-post';
 import { AuthService } from './auth.service';
+import { environment } from '../config/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class VideoService {
-  private readonly API_URL = 'http://localhost:8080/api/videos';
+  private readonly API_URL: string;
   private readonly MAX_VIDEO_SIZE = 200 * 1024 * 1024; // 200MB
 
   constructor(
     private http: HttpClient,
     private authService: AuthService
-  ) { }
+  ) {
+    this.API_URL = `${environment.apiBaseUrl}/api/videos`;
+  }
 
   /**
    * Get all videos

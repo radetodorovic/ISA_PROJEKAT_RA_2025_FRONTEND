@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { VideoService } from '../../services/video.service';
 import { VideoPost } from '../../models/video-post';
+import { environment } from '../../config/environment';
 
 @Component({
   selector: 'app-video-list',
@@ -15,6 +16,7 @@ export class VideoListComponent implements OnInit {
   videos: VideoPost[] = [];
   loading: boolean = true;
   error: string = '';
+  private apiBaseUrl = environment.apiBaseUrl;
 
   constructor(private videoService: VideoService) {}
 
@@ -38,11 +40,11 @@ export class VideoListComponent implements OnInit {
   }
 
   getThumbnailUrl(video: VideoPost): string {
-    return `http://localhost:8080${video.thumbnailUrl}`;
+    return `${this.apiBaseUrl}${video.thumbnailUrl}`;
   }
 
   getVideoUrl(video: VideoPost): string {
-    return `http://localhost:8080${video.videoUrl}`;
+    return `${this.apiBaseUrl}${video.videoUrl}`;
   }
 
   formatDate(dateString: string): string {

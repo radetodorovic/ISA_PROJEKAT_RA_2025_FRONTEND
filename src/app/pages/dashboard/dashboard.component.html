@@ -1,0 +1,12 @@
+<div class="dashboard-container">
+  <nav class="navbar">
+    <div class="navbar-brand">Dashboard</div>
+    <button (click)="logout()" class="logout-btn">Logout</button>
+  </nav>
+
+  <div class="dashboard-content">
+    <h1>Welcome to Dashboard</h1>
+    <p>You are logged in! User ID: {{ userId() }}</p>
+    <p>This is a protected route that requires authentication.</p>
+  </div>
+</div>
