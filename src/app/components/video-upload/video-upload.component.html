@@ -1,0 +1,181 @@
+<div class="video-upload-container">
+  <h2>Upload Video</h2>
+
+  <!-- Success Message -->
+  <div *ngIf="uploadComplete && uploadedVideo" class="success-message">
+    <h3>✓ Video uspešno postavljen!</h3>
+    <p><strong>Title:</strong> {{ uploadedVideo.title }}</p>
+    <p><strong>ID:</strong> {{ uploadedVideo.id }}</p>
+    <p>Forma će biti resetovana za nekoliko sekundi...</p>
+  </div>
+
+  <!-- Upload Form -->
+  <form *ngIf="!uploadComplete" (ngSubmit)="onSubmit()" class="upload-form">
+    
+    <!-- General Error -->
+    <div *ngIf="generalError" class="error-message general-error">
+      {{ generalError }}
+    </div>
+
+    <!-- Title -->
+    <div class="form-group">
+      <label for="title">Title *</label>
+      <input 
+        type="text" 
+        id="title" 
+        name="title"
+        [(ngModel)]="title"
+        [disabled]="isUploading"
+        placeholder="Enter video title"
+        class="form-control"
+        [class.error]="errors['title']"
+      />
+      <div *ngIf="errors['title']" class="error-message">{{ errors['title'] }}</div>
+    </div>
+
+    <!-- Description -->
+    <div class="form-group">
+      <label for="description">Description *</label>
+      <textarea 
+        id="description" 
+        name="description"
+        [(ngModel)]="description"
+        [disabled]="isUploading"
+        placeholder="Enter video description"
+        rows="5"
+        class="form-control"
+        [class.error]="errors['description']"
+      ></textarea>
+      <div *ngIf="errors['description']" class="error-message">{{ errors['description'] }}</div>
+    </div>
+
+    <!-- Tags -->
+    <div class="form-group">
+      <label for="tags">Tags *</label>
+      <div class="tags-input-wrapper">
+        <input 
+          type="text" 
+          id="tags" 
+          name="tagsInput"
+          [(ngModel)]="tagsInput"
+          [disabled]="isUploading"
+          placeholder="Enter tag and press Enter or click Add"
+          (keypress)="onTagInputKeypress($event)"
+          class="form-control"
+        />
+        <button 
+          type="button" 
+          (click)="addTag()"
+          [disabled]="isUploading || !tagsInput.trim()"
+          class="btn btn-secondary"
+        >
+          Add Tag
+        </button>
+      </div>
+      
+      <!-- Tags Display -->
+      <div class="tags-container" *ngIf="tags.length > 0">
+        <span *ngFor="let tag of tags" class="tag">
+          {{ tag }}
+          <button 
+            type="button" 
+            (click)="removeTag(tag)"
+            [disabled]="isUploading"
+            class="tag-remove"
+          >
+            ×
+          </button>
+        </span>
+      </div>
+      
+      <div *ngIf="errors['tags']" class="error-message">{{ errors['tags'] }}</div>
+    </div>
+
+    <!-- Location (Optional) -->
+    <div class="form-group">
+      <label for="location">Geographic Location (optional)</label>
+      <input 
+        type="text" 
+        id="location" 
+        name="location"
+        [(ngModel)]="location"
+        [disabled]="isUploading"
+        placeholder="e.g. Belgrade, Serbia or 44.8176,20.4633"
+        class="form-control"
+      />
+    </div>
+
+    <!-- Thumbnail Upload -->
+    <div class="form-group">
+      <label for="thumbnail">Thumbnail (Image) *</label>
+      <input 
+        type="file" 
+        id="thumbnail" 
+        name="thumbnail"
+        (change)="onThumbnailSelect($event)"
+        [disabled]="isUploading"
+        accept="image/jpeg,image/jpg,image/png,image/webp"
+        class="form-control"
+      />
+      
+      <!-- Thumbnail Preview -->
+      <div *ngIf="thumbnailPreview" class="thumbnail-preview">
+        <img [src]="thumbnailPreview" alt="Thumbnail preview" />
+        <p>{{ getFileSize(thumbnailFile) }}</p>
+      </div>
+      
+      <div *ngIf="errors['thumbnail']" class="error-message">{{ errors['thumbnail'] }}</div>
+    </div>
+
+    <!-- Video Upload -->
+    <div class="form-group">
+      <label for="video">Video (MP4, max 200MB) *</label>
+      <input 
+        type="file" 
+        id="video" 
+        name="video"
+        (change)="onVideoSelect($event)"
+        [disabled]="isUploading"
+        accept="video/mp4"
+        class="form-control"
+      />
+      
+      <!-- Video Info -->
+      <div *ngIf="videoFile" class="video-info">
+        <p><strong>File:</strong> {{ videoFile.name }}</p>
+        <p><strong>Veličina:</strong> {{ getFileSize(videoFile) }}</p>
+      </div>
+      
+      <div *ngIf="errors['video']" class="error-message">{{ errors['video'] }}</div>
+    </div>
+
+    <!-- Upload Progress -->
+    <div *ngIf="isUploading" class="upload-progress">
+      <div class="progress-bar">
+        <div class="progress-fill" [style.width.%]="uploadProgress"></div>
+      </div>
+      <p class="progress-text">Uploading: {{ uploadProgress }}%</p>
+    </div>
+
+    <!-- Submit Button -->
+    <div class="form-actions">
+      <button 
+        type="submit" 
+        [disabled]="isUploading"
+        class="btn btn-primary"
+      >
+        {{ isUploading ? 'Uploading...' : 'Upload Video' }}
+      </button>
+      
+      <button 
+        type="button" 
+        (click)="resetForm()"
+        [disabled]="isUploading"
+        class="btn btn-secondary"
+      >
+        Poništi
+      </button>
+    </div>
+  </form>
+</div>
+

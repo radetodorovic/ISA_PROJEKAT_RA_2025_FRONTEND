@@ -1,0 +1,61 @@
+<div class="video-list-container">
+  <div class="header">
+    <h2>All Videos</h2>
+    <a routerLink="/upload" class="btn btn-primary">Upload New Video</a>
+  </div>
+
+  <div *ngIf="loading" class="loading">
+    <p>Loading videos...</p>
+  </div>
+
+  <div *ngIf="error" class="error-message">
+    {{ error }}
+  </div>
+
+  <div *ngIf="!loading && !error && videos.length === 0" class="no-videos">
+    <p>No videos available yet.</p>
+    <a routerLink="/upload" class="btn btn-primary">Upload First Video</a>
+  </div>
+
+  <div *ngIf="!loading && videos.length > 0" class="videos-grid">
+    <div *ngFor="let video of videos" class="video-card">
+      <div class="thumbnail-container">
+        <img [src]="getThumbnailUrl(video)" [alt]="video.title" class="thumbnail" />
+        <div class="video-duration">
+          <span>{{ formatFileSize(video.videoSize || 0) }}</span>
+        </div>
+      </div>
+
+      <div class="video-info">
+        <h3 class="video-title">{{ video.title }}</h3>
+        <p class="video-description">{{ video.description }}</p>
+
+        <div class="video-tags">
+          <span *ngFor="let tag of video.tags" class="tag">{{ tag }}</span>
+        </div>
+
+        <div class="video-meta">
+          <div class="meta-item">
+            <span class="icon">👁️</span>
+            <span>{{ video.viewCount }} views</span>
+          </div>
+          <div class="meta-item">
+            <span class="icon">👍</span>
+            <span>{{ video.likeCount }} likes</span>
+          </div>
+          <div class="meta-item">
+            <span class="icon">💬</span>
+            <span>{{ video.commentCount }} comments</span>
+          </div>
+        </div>
+
+        <div class="video-footer">
+          <span class="video-date">{{ formatDate(video.createdAt || '') }}</span>
+          <span *ngIf="video.location" class="video-location">📍 {{ video.location }}</span>
+        </div>
+
+        <a [href]="getVideoUrl(video)" target="_blank" class="btn btn-watch">Watch Video</a>
+      </div>
+    </div>
+  </div>
+</div>
