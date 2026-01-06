@@ -22,6 +22,7 @@
 .nav-menu {
   display: flex;
   gap: 1.5rem;
+  align-items: center;
 }
 
 .nav-link {
@@ -32,10 +33,46 @@
   padding: 0.5rem 1rem;
   border-radius: 4px;
   transition: background 0.3s;
+  cursor: pointer;
+  background: none;
+  border: none;
 }
 
 .nav-link:hover {
   background: rgba(255, 255, 255, 0.2);
+}
+
+.auth-links {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.auth-link {
+  font-size: 0.95rem;
+}
+
+.register-link {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.register-link:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.logout-btn {
+  color: white;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  font-size: 0.95rem;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  transition: background 0.3s;
+}
+
+.logout-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .app-main {
@@ -64,6 +101,12 @@
 
   .nav-menu {
     width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .auth-links {
+    flex-wrap: wrap;
     justify-content: center;
   }
 }

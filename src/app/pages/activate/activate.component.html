@@ -1,0 +1,22 @@
+<div class="activate-container">
+  <div class="activate-wrapper">
+    <div *ngIf="isLoading()" class="loading">
+      <div class="spinner"></div>
+      <p>Activating your account...</p>
+    </div>
+
+    <div *ngIf="!isLoading() && successMessage()" class="success">
+      <div class="checkmark">✓</div>
+      <h1>Account Activated</h1>
+      <p>{{ successMessage() }}</p>
+      <p class="redirect-text">Redirecting to login...</p>
+    </div>
+
+    <div *ngIf="!isLoading() && errorMessage()" class="error">
+      <div class="error-icon">✗</div>
+      <h1>Activation Failed</h1>
+      <p>{{ errorMessage() }}</p>
+      <a [routerLink]="['/register']" class="link">Try registering again</a>
+    </div>
+  </div>
+</div>
