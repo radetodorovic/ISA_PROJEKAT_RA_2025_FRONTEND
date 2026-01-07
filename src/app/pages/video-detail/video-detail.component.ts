@@ -14,6 +14,7 @@ interface Comment {
   author: string;
   text: string;
   createdAt: string;
+  userId?: number;
 }
 
 @Component({
@@ -100,7 +101,8 @@ export class VideoDetailComponent implements OnInit {
           id: c.id,
           author: c.author || (c.userId ? `User ${c.userId}` : 'Anonymous'),
           text: c.text,
-          createdAt: c.createdAt
+          createdAt: c.createdAt,
+          userId: c.userId
         })) : [];
         this.commentsLoading = false;
         this.cdr.markForCheck();
@@ -117,7 +119,9 @@ export class VideoDetailComponent implements OnInit {
 
   toggleLike(): void {
     if (!this.isAuthenticated()) {
+      alert('Morate biti prijavljeni da biste lajkovali objave. Prijavite se ili registrujte.');
       this.error = 'Please login to like videos';
+      this.cdr.markForCheck();
       return;
     }
 
@@ -170,7 +174,9 @@ export class VideoDetailComponent implements OnInit {
 
   submitComment(): void {
     if (!this.isAuthenticated()) {
+      alert('Morate biti prijavljeni da biste komentarisali. Prijavite se ili registrujte.');
       this.error = 'Please login to comment';
+      this.cdr.markForCheck();
       return;
     }
 
@@ -189,7 +195,8 @@ export class VideoDetailComponent implements OnInit {
           id: response.id || Math.random(),
           author: response.userId ? `User ${response.userId}` : 'You',
           text: response.text || this.commentText,
-          createdAt: response.createdAt || new Date().toISOString()
+          createdAt: response.createdAt || new Date().toISOString(),
+          userId: response.userId
         };
         this.comments.unshift(newComment);
         this.commentText = '';

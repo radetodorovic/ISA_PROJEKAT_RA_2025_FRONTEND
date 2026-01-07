@@ -29,6 +29,13 @@
       <div class="video-info">
         <h3 class="video-title">{{ video.title }}</h3>
         <p class="video-description">{{ video.description }}</p>
+        
+        <div *ngIf="video.userId" class="video-author">
+          <span class="icon">👤</span>
+          <a [routerLink]="['/users', video.userId]" class="author-link">
+            User {{ video.userId }}
+          </a>
+        </div>
 
         <div class="video-tags">
           <span *ngFor="let tag of video.tags" class="tag">{{ tag }}</span>

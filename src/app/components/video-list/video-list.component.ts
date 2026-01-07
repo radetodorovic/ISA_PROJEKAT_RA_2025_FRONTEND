@@ -58,6 +58,14 @@ export class VideoListComponent implements OnInit {
           const anyData: any = videos as unknown as any;
           const list: any = Array.isArray(anyData) ? anyData : (anyData?.content || anyData?.items);
           this.videos = Array.isArray(list) ? list : (Array.isArray(videos) ? videos : []);
+          
+          // Sortiraj videos po createdAt (najnovije prvo)
+          this.videos.sort((a, b) => {
+            const dateA = new Date(a.createdAt || 0).getTime();
+            const dateB = new Date(b.createdAt || 0).getTime();
+            return dateB - dateA; // Opadajući redosled (najnovije prvo)
+          });
+          
           // Osiguraj da loading bude ugašen i u success grani
           this.loading = false;
           console.log('[VideoList] Videos set:', this.videos.length, 'items');
