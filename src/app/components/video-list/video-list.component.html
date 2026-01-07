@@ -54,7 +54,7 @@
           <span *ngIf="video.location" class="video-location">📍 {{ video.location }}</span>
         </div>
 
-        <a [href]="getVideoUrl(video)" target="_blank" class="btn btn-watch">Watch Video</a>
+        <a [routerLink]="['/videos', video.id]" class="btn btn-watch">Watch Video</a>
       </div>
     </div>
   </div>

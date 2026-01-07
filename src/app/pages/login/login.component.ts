@@ -74,14 +74,17 @@ export class LoginComponent {
         this.isLoading.set(false);
         this.loginAttempts.set(0);
 
-        // Store token and user info
-        this.authService.setToken(response.token);
-        if (response.user.id) {
-          this.authService.setUserId(response.user.id);
+        // Store token and user info (backend may not return user)
+        if (response?.token) {
+          this.authService.setToken(response.token);
+        }
+        const userId = (response as any)?.user?.id;
+        if (typeof userId === 'number') {
+          this.authService.setUserId(userId);
         }
 
-        // Redirect to dashboard
-        this.router.navigate(['/dashboard']);
+        // Redirect to home (which redirects to /videos)
+        this.router.navigate(['/']);
       },
       error: (error) => {
         this.isLoading.set(false);
