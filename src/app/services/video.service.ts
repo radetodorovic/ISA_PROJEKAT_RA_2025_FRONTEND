@@ -17,6 +17,7 @@ export class VideoService {
     private authService: AuthService
   ) {
     this.API_URL = `${environment.apiBaseUrl}/api/videos`;
+    console.log('[VideoService] API_URL =', this.API_URL);
   }
 
   /**
@@ -110,5 +111,35 @@ export class VideoService {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  }
+
+  /**
+   * Get comments for a video
+   */
+  getComments(videoId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.API_URL}/${videoId}/comments`);
+  }
+
+  /**
+   * Post a comment on a video
+   */
+  postComment(videoId: number, text: string): Observable<any> {
+    const formData = new FormData();
+    formData.append('text', text);
+    return this.http.post(`${this.API_URL}/${videoId}/comments`, formData);
+  }
+
+  /**
+   * Like a video
+   */
+  likeVideo(videoId: number): Observable<any> {
+    return this.http.post(`${this.API_URL}/${videoId}/like`, {}, { responseType: 'text' });
+  }
+
+  /**
+   * Unlike a video
+   */
+  unlikeVideo(videoId: number): Observable<any> {
+    return this.http.post(`${this.API_URL}/${videoId}/like`, {}, { responseType: 'text' });
   }
 }

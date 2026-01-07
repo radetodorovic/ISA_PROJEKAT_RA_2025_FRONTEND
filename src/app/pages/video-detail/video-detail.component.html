@@ -1,0 +1,102 @@
+<div class="video-detail-container">
+  <!-- Loading state -->
+  <div *ngIf="loading" class="loading-state">
+    <p>Loading video...</p>
+  </div>
+
+  <!-- Error state -->
+  <div *ngIf="error && !loading" class="error-message">
+    {{ error }}
+  </div>
+
+  <!-- Video details -->
+  <div *ngIf="video && !loading" class="video-content">
+    <!-- Video player -->
+    <div class="player-wrapper">
+      <video controls class="video-player" [src]="getVideoUrl()"></video>
+    </div>
+
+    <!-- Video info -->
+    <div class="video-info">
+      <h1>{{ video.title }}</h1>
+      <p class="description">{{ video.description }}</p>
+
+      <!-- Tags -->
+      <div *ngIf="video.tags && video.tags.length > 0" class="tags">
+        <span *ngFor="let tag of video.tags" class="tag">{{ tag }}</span>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats">
+        <div class="stat">
+          <span class="icon">👁️</span>
+          <span>{{ video.viewCount || 0 }} views</span>
+        </div>
+        <div class="stat">
+          <span class="icon">💬</span>
+          <span>{{ comments.length }} comments</span>
+        </div>
+        <div class="stat">
+          <span class="icon">📍</span>
+          <span>{{ video.location || 'Unknown' }}</span>
+        </div>
+      </div>
+
+      <!-- Like button -->
+      <button
+        class="like-button"
+        [class.liked]="liked"
+        (click)="toggleLike()"
+        [disabled]="!isAuthenticated()"
+      >
+        <span class="icon">👍</span>
+        <span>{{ liked ? 'Unlike' : 'Like' }} ({{ video.likeCount || 0 }})</span>
+      </button>
+
+      <p class="not-authenticated" *ngIf="!isAuthenticated()">
+        <a routerLink="/login">Login</a> to like and comment
+      </p>
+    </div>
+
+    <!-- Comments section -->
+    <div class="comments-section">
+      <h2>Comments</h2>
+
+      <!-- Comment form -->
+      <div *ngIf="isAuthenticated()" class="comment-form">
+        <textarea
+          [(ngModel)]="commentText"
+          placeholder="Write a comment..."
+          rows="4"
+          [disabled]="submitCommentLoading"
+        ></textarea>
+        <button
+          (click)="submitComment()"
+          [disabled]="submitCommentLoading || !commentText.trim()"
+          class="submit-btn"
+        >
+          {{ submitCommentLoading ? 'Posting...' : 'Post Comment' }}
+        </button>
+      </div>
+
+      <!-- Comments list -->
+      <div *ngIf="commentsLoading" class="loading-state">
+        <p>Loading comments...</p>
+      </div>
+
+      <div *ngIf="!commentsLoading && comments.length === 0" class="no-comments">
+        <p>No comments yet. Be the first to comment!</p>
+      </div>
+
+      <div *ngIf="!commentsLoading && comments.length > 0" class="comments-list">
+        <div *ngFor="let comment of comments" class="comment">
+          <div class="comment-header">
+            <strong>{{ comment.author }}</strong>
+            <span class="timestamp">{{ formatDate(comment.createdAt) }}</span>
+          </div>
+          <p class="comment-text">{{ comment.text }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

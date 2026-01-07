@@ -10,7 +10,9 @@ export class AuthService {
   constructor() { }
 
   setToken(token: string): void {
+    // Store under both keys for Angular and React compatibility
     localStorage.setItem(this.TOKEN_KEY, token);
+    localStorage.setItem('token', token);
   }
 
   getToken(): string | null {
@@ -19,6 +21,7 @@ export class AuthService {
 
   removeToken(): void {
     localStorage.removeItem(this.TOKEN_KEY);
+    localStorage.removeItem('token');
   }
 
   setUserId(userId: number): void {

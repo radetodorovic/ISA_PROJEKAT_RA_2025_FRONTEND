@@ -1,8 +1,9 @@
 import { defineConfig } from 'vite';
-import angular from '@angular/build';
+import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  plugins: [angular()],
+  // Use React plugin for the React SPA. Angular uses Angular CLI separately.
+  plugins: [react()],
   define: {
     'globalThis.__VITE_API_BASE_URL__': JSON.stringify(
       process.env.VITE_API_BASE_URL || 'http://localhost:8080'
