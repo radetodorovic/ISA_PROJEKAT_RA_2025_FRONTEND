@@ -20,6 +20,15 @@
     <div class="video-info">
       <h1>{{ video.title }}</h1>
       <p class="description">{{ video.description }}</p>
+      
+      <!-- Video Author -->
+      <div *ngIf="video.userId" class="video-author">
+        <span class="icon">👤</span>
+        <span>Posted by</span>
+        <a [routerLink]="['/users', video.userId]" class="author-link">
+          User {{ video.userId }}
+        </a>
+      </div>
 
       <!-- Tags -->
       <div *ngIf="video.tags && video.tags.length > 0" class="tags">
@@ -54,7 +63,8 @@
       </button>
 
       <p class="not-authenticated" *ngIf="!isAuthenticated()">
-        <a routerLink="/login">Login</a> to like and comment
+        <strong>⚠️ Morate biti prijavljeni</strong><br>
+        Da biste lajkovali i komentarisali objave, molimo vas da se <a routerLink="/login">prijavite</a> ili <a routerLink="/register">registrujete</a>.
       </p>
     </div>
 
@@ -91,7 +101,10 @@
       <div *ngIf="!commentsLoading && comments.length > 0" class="comments-list">
         <div *ngFor="let comment of comments" class="comment">
           <div class="comment-header">
-            <strong>{{ comment.author }}</strong>
+            <strong *ngIf="!comment.userId">{{ comment.author }}</strong>
+            <a *ngIf="comment.userId" [routerLink]="['/users', comment.userId]" class="comment-author-link">
+              {{ comment.author }}
+            </a>
             <span class="timestamp">{{ formatDate(comment.createdAt) }}</span>
           </div>
           <p class="comment-text">{{ comment.text }}</p>

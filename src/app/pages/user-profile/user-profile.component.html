@@ -1,0 +1,70 @@
+<div class="profile-container">
+  <div *ngIf="loading()" class="loading">
+    <p>Loading profile...</p>
+  </div>
+
+  <div *ngIf="error() && !loading()" class="error-message">
+    {{ error() }}
+  </div>
+
+  <div *ngIf="user() && !loading()" class="profile-content">
+    <!-- User Info -->
+    <div class="user-info-card">
+      <div class="avatar">
+        <span class="avatar-text">{{ getUserDisplayName().charAt(0).toUpperCase() }}</span>
+      </div>
+      
+      <h1>{{ getUserDisplayName() }}</h1>
+      
+      <div class="user-details">
+        <p *ngIf="user()?.username"><strong>Username:</strong> {{ user()?.username }}</p>
+        <p *ngIf="user()?.email"><strong>Email:</strong> {{ user()?.email }}</p>
+        <p *ngIf="user()?.address"><strong>Address:</strong> {{ user()?.address }}</p>
+      </div>
+
+      <div class="stats">
+        <div class="stat-item">
+          <span class="stat-number">{{ videos().length }}</span>
+          <span class="stat-label">Videos</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- User Videos -->
+    <div class="user-videos-section">
+      <h2>Videos by {{ user()?.username || 'this user' }}</h2>
+
+      <div *ngIf="videos().length === 0" class="no-videos">
+        <p>This user hasn't posted any videos yet.</p>
+      </div>
+
+      <div *ngIf="videos().length > 0" class="videos-grid">
+        <div *ngFor="let video of videos()" class="video-card">
+          <div class="thumbnail-container">
+            <img [src]="getThumbnailUrl(video)" [alt]="video.title" class="thumbnail" />
+          </div>
+
+          <div class="video-info">
+            <h3 class="video-title">{{ video.title }}</h3>
+            <p class="video-description">{{ video.description }}</p>
+
+            <div class="video-meta">
+              <div class="meta-item">
+                <span class="icon">👁️</span>
+                <span>{{ video.viewCount || 0 }}</span>
+              </div>
+              <div class="meta-item">
+                <span class="icon">👍</span>
+                <span>{{ video.likeCount || 0 }}</span>
+              </div>
+            </div>
+
+            <span class="video-date">{{ formatDate(video.createdAt || '') }}</span>
+
+            <a [routerLink]="['/videos', video.id]" class="btn btn-watch">Watch</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
