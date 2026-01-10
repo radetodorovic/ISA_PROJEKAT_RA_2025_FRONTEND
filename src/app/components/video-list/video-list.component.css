@@ -17,6 +17,11 @@
   margin: 0;
 }
 
+.header-actions {
+  display: flex;
+  gap: 1rem;
+}
+
 .loading,
 .error-message,
 .no-videos {
@@ -31,6 +36,10 @@
   color: #721c24;
   border: 1px solid #f5c6cb;
   border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
 }
 
 .no-videos {
