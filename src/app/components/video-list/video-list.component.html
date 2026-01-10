@@ -57,7 +57,7 @@
         </div>
 
         <div class="video-footer">
-          <span class="video-date">{{ formatDate(video.createdAt || '') }}</span>
+          <span class="video-date">{{ formatDate(video.uploadedAt || '') }}</span>
           <span *ngIf="video.location" class="video-location">📍 {{ video.location }}</span>
         </div>
 

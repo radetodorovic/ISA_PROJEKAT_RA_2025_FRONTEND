@@ -176,8 +176,7 @@ export class VideoUploadComponent implements OnInit {
       tags: this.tags,
       thumbnail: this.thumbnailFile!,
       video: this.videoFile!,
-      location: this.location.trim() || undefined,
-      userId: this.userId
+      location: this.location.trim() || undefined
     };
     
     this.isUploading = true;

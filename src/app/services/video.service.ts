@@ -35,6 +35,22 @@ export class VideoService {
   }
 
   /**
+   * Get single video by ID
+   */
+  getVideoById(id: number): Observable<VideoPost> {
+    const token = this.authService.getToken();
+    const headers = token ? new HttpHeaders().set('Authorization', `Bearer ${token}`) : new HttpHeaders();
+    return this.http.get<VideoPost>(`${this.API_URL}/${id}`, { headers });
+  }
+
+  /**
+   * Get stream URL for video
+   */
+  getStreamUrl(filename: string): string {
+    return `${this.API_URL}/stream/${filename}`;
+  }
+
+  /**
    * Upload video with progress tracking
    */
   uploadVideo(request: VideoUploadRequest): Observable<HttpEvent<VideoPost>> {
@@ -48,20 +64,19 @@ export class VideoService {
     formData.append('title', request.title);
     formData.append('description', request.description);
     
-    // Tagovi - svaki tag posebno
-    request.tags.forEach(tag => {
-      formData.append('tags', tag.trim());
-    });
+    // Tags - sent as comma-separated string
+    formData.append('tags', request.tags.join(','));
     
     formData.append('thumbnail', request.thumbnail);
     formData.append('video', request.video);
-    formData.append('userId', request.userId.toString());
     
     if (request.location) {
       formData.append('location', request.location);
     }
 
-    // Headers sa JWT tokenom (ako postoji)
+    // NOTE: userId NOT sent - backend extracts it from JWT token
+
+    // Headers with JWT token
     const headers = new HttpHeaders();
     const token = this.authService.getToken();
     if (token) {

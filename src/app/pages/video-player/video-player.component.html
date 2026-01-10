@@ -1,0 +1,83 @@
+<div class="video-player-container">
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Loading video...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !loading" class="error-container">
+    <div class="error-message">
+      <h3>⚠️ Error</h3>
+      <p>{{ error }}</p>
+      <button (click)="goBack()" class="btn btn-primary">Go Back to Videos</button>
+    </div>
+  </div>
+
+  <!-- Video Content -->
+  <div *ngIf="video && !loading && !error" class="video-content">
+    <button (click)="goBack()" class="back-button">← Back to Videos</button>
+    
+    <div class="video-wrapper">
+      <video 
+        [src]="streamUrl" 
+        controls 
+        (play)="onVideoPlay()"
+        class="video-element"
+        preload="metadata">
+        Your browser does not support the video tag.
+      </video>
+    </div>
+
+    <div class="video-info">
+      <h1 class="video-title">{{ video.title }}</h1>
+      
+      <div class="video-meta">
+        <div class="meta-left">
+          <span class="views">
+            <span class="icon">👁️</span>
+            <strong>{{ video.viewCount || 0 }}</strong> views
+          </span>
+          <span class="upload-date">
+            <span class="icon">📅</span>
+            {{ formatDate(video.uploadedAt) }}
+          </span>
+        </div>
+        
+        <div class="meta-right">
+          <span class="likes">
+            <span class="icon">👍</span>
+            {{ video.likeCount || 0 }}
+          </span>
+          <span class="comments">
+            <span class="icon">💬</span>
+            {{ video.commentCount || 0 }}
+          </span>
+        </div>
+      </div>
+
+      <div class="video-user" *ngIf="video.user">
+        <div class="user-avatar">{{ video.user.username.charAt(0).toUpperCase() }}</div>
+        <div class="user-info">
+          <strong class="username">{{ video.user.username }}</strong>
+        </div>
+      </div>
+
+      <div class="video-description">
+        <h3>Description</h3>
+        <p>{{ video.description }}</p>
+      </div>
+
+      <div class="video-tags" *ngIf="video.tags && video.tags.length > 0">
+        <span *ngFor="let tag of video.tags" class="tag">
+          #{{ tag }}
+        </span>
+      </div>
+
+      <div class="video-location" *ngIf="video.location">
+        <span class="icon">📍</span>
+        {{ video.location }}
+      </div>
+    </div>
+  </div>
+</div>

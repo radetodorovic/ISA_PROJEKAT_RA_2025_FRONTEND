@@ -6,9 +6,14 @@ export interface VideoPost {
   thumbnailUrl?: string;
   videoUrl?: string;
   videoSize?: number;
-  createdAt?: string;
+  uploadedAt?: string;
+  createdAt?: string; // Backwards compatibility
   location?: string;
-  userId: number;
+  user?: {
+    id: number;
+    username: string;
+  };
+  userId?: number; // Backwards compatibility
   viewCount?: number;
   likeCount?: number;
   commentCount?: number;
@@ -21,5 +26,4 @@ export interface VideoUploadRequest {
   thumbnail: File;
   video: File;
   location?: string;
-  userId: number;
 }
