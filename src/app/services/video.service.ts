@@ -27,6 +27,22 @@ export class VideoService {
   }
 
   /**
+   * Get single video by ID
+   */
+  getVideoById(id: number): Observable<VideoPost> {
+    const token = this.authService.getToken();
+    const headers = token ? new HttpHeaders().set('Authorization', `Bearer ${token}`) : new HttpHeaders();
+    return this.http.get<VideoPost>(`${this.API_URL}/${id}`, { headers });
+  }
+
+  /**
+   * Get stream URL for video
+   */
+  getStreamUrl(filename: string): string {
+    return `${this.API_URL}/stream/${filename}`;
+  }
+
+  /**
    * Upload video with progress tracking
    */
   uploadVideo(request: VideoUploadRequest): Observable<HttpEvent<VideoPost>> {

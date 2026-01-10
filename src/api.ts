@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { InternalAxiosRequestConfig } from 'axios';
 
 // Base URL is provided via Vite define in vite.config.ts; fallback to localhost
 const API_BASE_URL: string = (globalThis as any).__VITE_API_BASE_URL__ || 'http://localhost:8080';
@@ -22,11 +22,11 @@ export interface Comment {
 // Axios instance configured to attach Authorization header from localStorage token
 const api = axios.create({ baseURL: API_BASE_URL });
 
-api.interceptors.request.use((config) => {
+api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = localStorage.getItem('token');
   if (token) {
     config.headers = config.headers ?? {};
-    (config.headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+    config.headers['Authorization'] = `Bearer ${token}`;
   }
   return config;
 });
