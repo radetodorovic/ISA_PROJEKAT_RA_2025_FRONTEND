@@ -1,7 +1,12 @@
 <div class="video-list-container">
   <div class="header">
     <h2>All Videos</h2>
-    <a routerLink="/upload" class="btn btn-primary">Upload New Video</a>
+    <div class="header-actions">
+      <button (click)="loadVideos()" class="btn btn-secondary" [disabled]="loading">
+        {{ loading ? 'Loading...' : 'Refresh' }}
+      </button>
+      <a routerLink="/upload" class="btn btn-primary">Upload New Video</a>
+    </div>
   </div>
 
   <div *ngIf="loading" class="loading">
@@ -10,6 +15,7 @@
 
   <div *ngIf="error" class="error-message">
     {{ error }}
+    <button (click)="loadVideos()" class="btn btn-secondary">Try Again</button>
   </div>
 
   <div *ngIf="!loading && !error && videos.length === 0" class="no-videos">
@@ -57,7 +63,7 @@
         </div>
 
         <div class="video-footer">
-          <span class="video-date">{{ formatDate(video.createdAt || '') }}</span>
+          <span class="video-date">{{ formatDate(video.uploadedAt || '') }}</span>
           <span *ngIf="video.location" class="video-location">📍 {{ video.location }}</span>
         </div>
 

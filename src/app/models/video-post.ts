@@ -6,9 +6,12 @@ export interface VideoPost {
   thumbnailUrl?: string;
   videoUrl?: string;
   videoSize?: number;
-  createdAt?: string;
+  uploadedAt?: string;
   location?: string;
-  userId: number;
+  user?: {
+    id: number;
+    username: string;
+  };
   viewCount?: number;
   likeCount?: number;
   commentCount?: number;
@@ -21,5 +24,4 @@ export interface VideoUploadRequest {
   thumbnail: File;
   video: File;
   location?: string;
-  userId: number;
 }
