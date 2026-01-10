@@ -1,7 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpEvent, HttpHeaders, HttpRequest } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { tap, shareReplay } from 'rxjs/operators';
 import { VideoPost, VideoUploadRequest } from '../models/video-post';
+import { Comment, PaginatedComments } from '../models/comment';
 import { AuthService } from './auth.service';
 
 @Injectable({
@@ -115,5 +117,110 @@ export class VideoService {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  }
+
+  /**
+   * Get comments for a video with pagination and caching
+   * @param videoId - The video ID
+   * @param page - Page number (0-indexed), default 0
+   * @param size - Page size, default 10
+   * @returns Observable of paginated comments
+   */
+  getComments(videoId: number, page: number = 0, size: number = 10): Observable<any> {
+    // Proveri da li je cache istekao
+    const now = Date.now();
+    const expiry = this.commentsCacheExpiry.get(videoId);
+    if (expiry && now > expiry) {
+      // Cache je istekao, obriši ga
+      this.commentsCache.delete(videoId);
+      this.commentsCacheExpiry.delete(videoId);
+    }
+
+    // Proveri keš za ovu stranicu
+    let videoCache = this.commentsCache.get(videoId);
+    if (!videoCache) {
+      videoCache = new Map();
+      this.commentsCache.set(videoId, videoCache);
+    }
+
+    // Ako postoji kesirana vrednost za ovu stranicu, vrati je
+    if (videoCache.has(page)) {
+      console.log(`[VideoService] Returning cached comments for video ${videoId}, page ${page}`);
+      return videoCache.get(page) as Observable<PaginatedComments>;
+    }
+
+    // Inače, učitaj sa API-ja
+    const observable$ = this.http.get<PaginatedComments>(
+      `${this.API_URL}/${videoId}/comments?page=${page}&size=${size}`
+    ).pipe(
+      // Kesiramo resurs za 5 minuta ili dok ne istekne
+      tap((comments) => {
+        console.log(`[VideoService] Cached comments for video ${videoId}, page ${page}`);
+        this.commentsCacheExpiry.set(videoId, now + this.COMMENTS_CACHE_DURATION);
+      }),
+      // shareReplay čuva rezultat i deli ga svim subscribers-ima bez ponovnog API poziva
+      shareReplay(1)
+    );
+
+    videoCache.set(page, observable$);
+    return observable$;
+  }
+
+  /**
+   * Get comments without pagination (fallback for backward compatibility)
+   * @param videoId - The video ID
+   * @returns Observable of comments array
+   */
+  getCommentsOld(videoId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.API_URL}/${videoId}/comments`);
+  }
+
+  /**
+   * Post a comment on a video and invalidate cache
+   */
+  postComment(videoId: number, text: string): Observable<any> {
+    const formData = new FormData();
+    formData.append('text', text);
+    
+    return this.http.post(`${this.API_URL}/${videoId}/comments`, formData).pipe(
+      tap((response) => {
+        // Invalidiraj keš za ovaj video kada se novi komentar postavi
+        console.log(`[VideoService] Invalidating comment cache for video ${videoId}`);
+        this.commentsCache.delete(videoId);
+        this.commentsCacheExpiry.delete(videoId);
+      })
+    );
+  }
+
+  /**
+   * Clear comment cache for a video
+   */
+  clearCommentCache(videoId: number): void {
+    this.commentsCache.delete(videoId);
+    this.commentsCacheExpiry.delete(videoId);
+    console.log(`[VideoService] Cleared comment cache for video ${videoId}`);
+  }
+
+  /**
+   * Clear all comment cache
+   */
+  clearAllCommentCache(): void {
+    this.commentsCache.clear();
+    this.commentsCacheExpiry.clear();
+    console.log('[VideoService] Cleared all comment cache');
+  }
+
+  /**
+   * Like a video
+   */
+  likeVideo(videoId: number): Observable<any> {
+    return this.http.post(`${this.API_URL}/${videoId}/like`, {}, { responseType: 'text' });
+  }
+
+  /**
+   * Unlike a video
+   */
+  unlikeVideo(videoId: number): Observable<any> {
+    return this.http.post(`${this.API_URL}/${videoId}/like`, {}, { responseType: 'text' });
   }
 }

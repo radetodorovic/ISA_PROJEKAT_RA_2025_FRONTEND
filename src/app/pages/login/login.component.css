@@ -55,6 +55,14 @@ input.error {
   border-color: #e74c3c;
 }
 
+input[type="password"] {
+  color: #000000;
+}
+
+input[type="password"].error {
+  color: #000000;
+}
+
 input:disabled {
   background-color: #f5f5f5;
   cursor: not-allowed;

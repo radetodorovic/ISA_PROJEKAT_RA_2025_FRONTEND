@@ -70,18 +70,35 @@ export class LoginComponent {
     console.log('Sending login data:', loginData);
 
     this.apiService.login(loginData).subscribe({
-      next: (response) => {
-        this.isLoading.set(false);
+      next: async (response) => {
         this.loginAttempts.set(0);
 
         // Store token and user info
-        this.authService.setToken(response.token);
-        if (response.user.id) {
-          this.authService.setUserId(response.user.id);
+        if (response?.token) {
+          this.authService.setToken(response.token);
         }
-
-        // Redirect to dashboard
-        this.router.navigate(['/dashboard']);
+        
+        const userId = (response as any)?.user?.id;
+        if (typeof userId === 'number') {
+          this.authService.setUserId(userId);
+          this.isLoading.set(false);
+          this.router.navigate(['/']);
+        } else {
+          // Fallback: ČEKAJ da se userId resolvuje
+          console.log('Resolving userId from server...');
+          const resolvedId = await this.authService.ensureUserId();
+          console.log('Resolved userId:', resolvedId);
+          
+          this.isLoading.set(false);
+          
+          if (resolvedId) {
+            this.router.navigate(['/']);
+          } else {
+            // Ako ne može da se resoluje userId, ipak idi na home
+            console.warn('Could not resolve userId, navigating anyway');
+            this.router.navigate(['/']);
+          }
+        }
       },
       error: (error) => {
         this.isLoading.set(false);

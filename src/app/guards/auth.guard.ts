@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { CanActivate, CanActivateFn, Router, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 
@@ -27,13 +27,14 @@ export const authGuard: CanActivateFn = (
   route: ActivatedRouteSnapshot,
   state: RouterStateSnapshot
 ): boolean => {
-  const authService = new AuthService();
+  const authService = inject(AuthService);
+  const router = inject(Router);
 
   if (authService.isAuthenticated()) {
     return true;
   }
 
-  // Manual router injection via DI not available in functional guard
-  // Use the class-based guard or inject Router via DI provider
+  // Redirect unauthenticated users to login
+  router.navigate(['/login']);
   return false;
 };

@@ -35,6 +35,13 @@
       <div class="video-info">
         <h3 class="video-title">{{ video.title }}</h3>
         <p class="video-description">{{ video.description }}</p>
+        
+        <div *ngIf="video.userId" class="video-author">
+          <span class="icon">👤</span>
+          <a [routerLink]="['/users', video.userId]" class="author-link">
+            User {{ video.userId }}
+          </a>
+        </div>
 
         <div class="video-tags">
           <span *ngFor="let tag of video.tags" class="tag">{{ tag }}</span>
@@ -60,7 +67,7 @@
           <span *ngIf="video.location" class="video-location">📍 {{ video.location }}</span>
         </div>
 
-        <a [href]="getVideoUrl(video)" target="_blank" class="btn btn-watch">Watch Video</a>
+        <a [routerLink]="['/videos', video.id]" class="btn btn-watch">Watch Video</a>
       </div>
     </div>
   </div>

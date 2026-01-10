@@ -53,6 +53,15 @@ input:focus {
 
 input.error {
   border-color: #e74c3c;
+  color: #c0392b;
+}
+
+input[type="password"] {
+  color: #000000;
+}
+
+input[type="password"].error {
+  color: #000000 !important;
 }
 
 input:disabled {
