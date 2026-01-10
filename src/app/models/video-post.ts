@@ -7,13 +7,11 @@ export interface VideoPost {
   videoUrl?: string;
   videoSize?: number;
   uploadedAt?: string;
-  createdAt?: string; // Backwards compatibility
   location?: string;
   user?: {
     id: number;
     username: string;
   };
-  userId?: number; // Backwards compatibility
   viewCount?: number;
   likeCount?: number;
   commentCount?: number;

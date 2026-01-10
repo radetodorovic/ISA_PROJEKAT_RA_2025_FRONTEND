@@ -155,6 +155,11 @@
         <div class="progress-fill" [style.width.%]="uploadProgress"></div>
       </div>
       <p class="progress-text">Uploading: {{ uploadProgress }}%</p>
+      
+      <!-- Timeout Warning -->
+      <div *ngIf="uploadTimeoutWarning" class="warning-message">
+        ⚠️ Upload traje duže od očekivanog. Molimo sačekajte, ne napuštajte stranicu.
+      </div>
     </div>
 
     <!-- Submit Button -->

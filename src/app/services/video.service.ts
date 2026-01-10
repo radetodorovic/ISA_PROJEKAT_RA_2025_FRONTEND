@@ -5,27 +5,19 @@ import { tap, shareReplay } from 'rxjs/operators';
 import { VideoPost, VideoUploadRequest } from '../models/video-post';
 import { Comment, PaginatedComments } from '../models/comment';
 import { AuthService } from './auth.service';
-import { environment } from '../config/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class VideoService {
-  private readonly API_URL: string;
+  private readonly API_URL = 'http://localhost:8080/api/videos';
   private readonly MAX_VIDEO_SIZE = 200 * 1024 * 1024; // 200MB
-  
-  // Kesiranje komentara: Map<videoId, Map<page, Observable>>
-  private commentsCache = new Map<number, Map<number, Observable<PaginatedComments>>>();
-  private commentsCacheExpiry = new Map<number, number>(); // videoId -> expiry time
-  private readonly COMMENTS_CACHE_DURATION = 5 * 60 * 1000; // 5 minuta
+  private readonly UPLOAD_TIMEOUT = 600000; // 10 minuta
 
   constructor(
     private http: HttpClient,
     private authService: AuthService
-  ) {
-    this.API_URL = `${environment.apiBaseUrl}/api/videos`;
-    console.log('[VideoService] API_URL =', this.API_URL);
-  }
+  ) { }
 
   /**
    * Get all videos
@@ -54,9 +46,19 @@ export class VideoService {
    * Upload video with progress tracking
    */
   uploadVideo(request: VideoUploadRequest): Observable<HttpEvent<VideoPost>> {
+    // Proveri JWT token pre upload-a
+    const token = this.authService.getToken();
+    if (!token) {
+      throw new Error('Morate biti ulogovani da biste postavili video');
+    }
+
     // Validacija
     if (!this.isValidVideoFile(request.video)) {
       throw new Error('Video mora biti MP4 format i maksimalno 200MB');
+    }
+
+    if (!this.isValidThumbnailFile(request.thumbnail)) {
+      throw new Error('Thumbnail mora biti slika (JPG, PNG, WEBP)');
     }
 
     // Kreiranje FormData
@@ -64,7 +66,7 @@ export class VideoService {
     formData.append('title', request.title);
     formData.append('description', request.description);
     
-    // Tags - sent as comma-separated string
+    // Tags - šalju se kao jedan string odvojen zarezima
     formData.append('tags', request.tags.join(','));
     
     formData.append('thumbnail', request.thumbnail);
@@ -74,16 +76,14 @@ export class VideoService {
       formData.append('location', request.location);
     }
 
-    // NOTE: userId NOT sent - backend extracts it from JWT token
+    // NAPOMENA: userId se NE šalje - backend ga uzima iz JWT tokena
 
-    // Headers with JWT token
-    const headers = new HttpHeaders();
-    const token = this.authService.getToken();
-    if (token) {
-      headers.append('Authorization', `Bearer ${token}`);
-    }
+    // Headers sa JWT tokenom
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
 
-    // HttpRequest sa reportProgress za progress tracking
+    // HttpRequest sa reportProgress za progress tracking i timeout
     const httpRequest = new HttpRequest(
       'POST',
       `${this.API_URL}/upload`,

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpEventType } from '@angular/common/http';
@@ -31,24 +31,25 @@ export class VideoUploadComponent implements OnInit {
   uploadProgress: number = 0;
   uploadComplete: boolean = false;
   uploadedVideo: VideoPost | null = null;
+  uploadStartTime: number = 0;
+  uploadTimeoutWarning: boolean = false;
+  progressInterval: any = null;
   
   // Validacija i errori
   errors: { [key: string]: string } = {};
   generalError: string = '';
   
-  // User info
-  userId: number = 1; // Default, može se uzeti iz AuthService
-  
   constructor(
     private videoService: VideoService,
-    private authService: AuthService
+    private authService: AuthService,
+    private ngZone: NgZone,
+    private cdr: ChangeDetectorRef
   ) {}
   
   ngOnInit(): void {
-    // Pokušaj da uzmeš userId iz auth servisa ako postoji
-    const storedUserId = this.authService.getUserId();
-    if (storedUserId) {
-      this.userId = storedUserId;
+    // Proveri da li je korisnik ulogovan
+    if (!this.authService.getToken()) {
+      this.generalError = 'Morate biti ulogovani da biste postavili video';
     }
   }
   
@@ -169,6 +170,12 @@ export class VideoUploadComponent implements OnInit {
     if (!this.validateForm()) {
       return;
     }
+
+    // Dodatna provera JWT tokena
+    if (!this.authService.getToken()) {
+      this.generalError = 'Morate biti ulogovani da biste postavili video';
+      return;
+    }
     
     const uploadRequest: VideoUploadRequest = {
       title: this.title.trim(),
@@ -180,30 +187,73 @@ export class VideoUploadComponent implements OnInit {
     };
     
     this.isUploading = true;
-    this.uploadProgress = 0;
+    this.uploadProgress = 5;
     this.generalError = '';
+    this.uploadTimeoutWarning = false;
+    this.uploadStartTime = Date.now();
+    this.cdr.detectChanges();
+    
+    // Simuliraj progress - rekurzivno sa setTimeout
+    const updateProgress = () => {
+      if (this.isUploading && this.uploadProgress < 95) {
+        if (this.uploadProgress < 85) {
+          this.uploadProgress += 3;
+        } else {
+          this.uploadProgress += 1;
+        }
+        console.log('Progress:', this.uploadProgress);
+        this.cdr.detectChanges();
+        setTimeout(updateProgress, 400);
+      }
+    };
+    setTimeout(updateProgress, 400);
+    
+    // Timeout warning posle 5 minuta
+    const timeoutWarning = setTimeout(() => {
+      if (this.isUploading) {
+        this.uploadTimeoutWarning = true;
+      }
+    }, 300000);
     
     this.videoService.uploadVideo(uploadRequest).subscribe({
       next: (event) => {
-        if (event.type === HttpEventType.UploadProgress) {
-          // Progress update
-          if (event.total) {
-            this.uploadProgress = Math.round((100 * event.loaded) / event.total);
-          }
-        } else if (event.type === HttpEventType.Response) {
-          // Upload complete
+        if (event.type === HttpEventType.Response) {
+          this.isUploading = false;
+          this.uploadProgress = 100;
           this.uploadComplete = true;
           this.uploadedVideo = event.body;
+          clearTimeout(timeoutWarning);
+          this.cdr.detectChanges();
           console.log('Upload uspešan:', this.uploadedVideo);
           
-          // Success poruka ostaje, korisnik mora ručno da resetuje
+          setTimeout(() => {
+            this.resetForm();
+            this.cdr.detectChanges();
+          }, 5000);
         }
       },
       error: (error) => {
+        this.isUploading = false;
+        clearTimeout(timeoutWarning);
         console.error('Upload error:', error);
-        this.generalError = error.error?.message || 'Došlo je do greške prilikom upload-a. Pokušaj ponovo.';
+        
+        // Parsiranje greške sa backa
+        let errorMessage = 'Došlo je do greške prilikom upload-a. Pokušajte ponovo.';
+        
+        if (error.status === 401) {
+          errorMessage = 'Niste autorizovani. Molimo prijavite se ponovo.';
+        } else if (error.status === 400) {
+          errorMessage = error.error?.message || 'Neispravni podaci. Proverite formu.';
+        } else if (error.status === 500) {
+          errorMessage = 'Greška na serveru. Upload je otkazan (rollback izvršen).';
+        } else if (error.error?.message) {
+          errorMessage = error.error.message;
+        }
+        
+        this.generalError = errorMessage;
         this.isUploading = false;
         this.uploadProgress = 0;
+        this.uploadTimeoutWarning = false;
       }
     });
   }
@@ -226,6 +276,16 @@ export class VideoUploadComponent implements OnInit {
     this.uploadedVideo = null;
     this.errors = {};
     this.generalError = '';
+    this.uploadTimeoutWarning = false;
+    this.uploadStartTime = 0;
+    
+    // Reset file inputs
+    const thumbnailInput = document.getElementById('thumbnail') as HTMLInputElement;
+    const videoInput = document.getElementById('video') as HTMLInputElement;
+    if (thumbnailInput) thumbnailInput.value = '';
+    if (videoInput) videoInput.value = '';
+    
+    this.cdr.detectChanges();
   }
   
   /**
