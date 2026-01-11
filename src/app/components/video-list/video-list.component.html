@@ -43,6 +43,13 @@
           </a>
         </div>
 
+        <div *ngIf="video.user?.id" class="video-publisher">
+          <span class="publisher-label">Publisher:</span>
+          <a [routerLink]="['/users', video.user?.id]" class="publisher-link">
+            {{ video.user?.username || ('User ' + video.user?.id) }}
+          </a>
+        </div>
+
         <div class="video-tags">
           <span *ngFor="let tag of video.tags" class="tag">{{ tag }}</span>
         </div>

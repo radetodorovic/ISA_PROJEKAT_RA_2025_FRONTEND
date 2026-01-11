@@ -79,6 +79,37 @@
   text-decoration: underline;
 }
 
+.publisher-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  color: #666;
+  font-size: 14px;
+}
+
+.publisher-label {
+  font-weight: 600;
+  color: #333;
+}
+
+.publisher-link {
+  color: #667eea;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.3s;
+}
+
+.publisher-link:hover {
+  color: #764ba2;
+  text-decoration: underline;
+}
+
+.publisher-name {
+  color: #667eea;
+  font-weight: 600;
+}
+
 .tags {
   display: flex;
   flex-wrap: wrap;

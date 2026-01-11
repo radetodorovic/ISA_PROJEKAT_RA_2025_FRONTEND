@@ -19,16 +19,17 @@
     <!-- Video info -->
     <div class="video-info">
       <h1>{{ video.title }}</h1>
-      <p class="description">{{ video.description }}</p>
       
-      <!-- Video Author -->
-      <div *ngIf="video.user?.id" class="video-author">
-        <span class="icon">👤</span>
-        <span>Posted by</span>
-        <a [routerLink]="['/users', video.user?.id]" class="author-link">
-          {{ video.user?.username || ('User ' + video.user?.id) }}
+      <!-- Publisher - always visible -->
+      <div *ngIf="video.userId || video.user" class="publisher-info">
+        <span class="publisher-label">Publisher:</span>
+        <a *ngIf="video.userId" [routerLink]="['/users', video.userId]" class="publisher-link">
+          {{ video.user?.username || ('User ' + video.userId) }}
         </a>
+        <span *ngIf="!video.userId && video.user" class="publisher-name">{{ video.user.username || 'Unknown' }}</span>
       </div>
+      
+      <p class="description">{{ video.description }}</p>
 
       <!-- Tags -->
       <div *ngIf="video.tags && video.tags.length > 0" class="tags">
