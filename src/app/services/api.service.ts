@@ -32,10 +32,11 @@ export class ApiService {
     return headers;
   }
 
-  register(data: RegisterRequest): Observable<{ message: string }> {
-    return this.http.post<{ message: string }>(
+  register(data: RegisterRequest): Observable<any> {
+    return this.http.post(
       `${this.apiBaseUrl}/api/auth/register`,
-      data
+      data,
+      { responseType: 'text' }
     ).pipe(
       catchError(this.handleError.bind(this))
     );
