@@ -81,8 +81,8 @@ export class UserProfileComponent implements OnInit {
         
         // Sortiraj po datumu (najnovije prvo)
         userVideos.sort((a: any, b: any) => {
-          const dateA = new Date(a.createdAt || 0).getTime();
-          const dateB = new Date(b.createdAt || 0).getTime();
+          const dateA = new Date(a.uploadedAt || a.createdAt || 0).getTime();
+          const dateB = new Date(b.uploadedAt || b.createdAt || 0).getTime();
           return dateB - dateA;
         });
         
@@ -98,8 +98,10 @@ export class UserProfileComponent implements OnInit {
     return `${this.apiBaseUrl}${video.thumbnailUrl}`;
   }
 
-  formatDate(dateString: string): string {
+  formatDate(dateString?: string): string {
+    if (!dateString) return 'Date unavailable';
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Date unavailable';
     return date.toLocaleDateString('en-US', { 
       year: 'numeric', 
       month: 'long', 

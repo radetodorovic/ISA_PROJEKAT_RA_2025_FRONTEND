@@ -6,8 +6,10 @@ export interface VideoPost {
   thumbnailUrl?: string;
   videoUrl?: string;
   videoSize?: number;
+  createdAt?: string;
   uploadedAt?: string;
   location?: string;
+  userId?: number;
   user?: {
     id: number;
     username: string;
