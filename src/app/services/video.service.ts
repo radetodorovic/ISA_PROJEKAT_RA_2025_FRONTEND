@@ -13,6 +13,9 @@ export class VideoService {
   private readonly API_URL = 'http://localhost:8080/api/videos';
   private readonly MAX_VIDEO_SIZE = 200 * 1024 * 1024; // 200MB
   private readonly UPLOAD_TIMEOUT = 600000; // 10 minuta
+  private readonly COMMENTS_CACHE_DURATION = 5 * 60 * 1000; // 5 minuta
+  private commentsCache = new Map<number, Map<number, Observable<PaginatedComments>>>();
+  private commentsCacheExpiry = new Map<number, number>();
 
   constructor(
     private http: HttpClient,

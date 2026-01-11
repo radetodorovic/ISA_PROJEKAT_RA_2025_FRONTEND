@@ -61,8 +61,8 @@ export class VideoListComponent implements OnInit {
           
           // Sortiraj videos po createdAt (najnovije prvo)
           this.videos.sort((a, b) => {
-            const dateA = new Date(a.createdAt || 0).getTime();
-            const dateB = new Date(b.createdAt || 0).getTime();
+            const dateA = new Date(a.createdAt || a.uploadedAt || 0).getTime();
+            const dateB = new Date(b.createdAt || b.uploadedAt || 0).getTime();
             return dateB - dateA; // Opadajući redosled (najnovije prvo)
           });
           
@@ -98,14 +98,36 @@ export class VideoListComponent implements OnInit {
   }
 
   formatDate(dateString: string): string {
+    return this.formatDateSafe(dateString);
+  }
+
+  getDisplayDate(video: VideoPost): string {
+    const raw = video.uploadedAt || video.createdAt;
+    return this.formatDateSafe(raw);
+  }
+
+  hasValidDate(video: VideoPost): boolean {
+    const raw = video.uploadedAt || video.createdAt;
+    return this.isValidDate(raw);
+  }
+
+  private formatDateSafe(dateString?: string): string {
+    if (!dateString) return 'Date unavailable';
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
+    if (isNaN(date.getTime())) return 'Date unavailable';
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
     });
+  }
+
+  private isValidDate(dateString?: string): boolean {
+    if (!dateString) return false;
+    const date = new Date(dateString);
+    return !isNaN(date.getTime());
   }
 
   formatFileSize(bytes: number): string {
