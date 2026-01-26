@@ -11,6 +11,22 @@
   margin-bottom: 2rem;
 }
 
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.trending-input {
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid #cfd6ee;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  min-width: 220px;
+}
+
 .header h2 {
   font-size: 2rem;
   color: #333;
@@ -29,6 +45,31 @@
   padding: 3rem;
   font-size: 1.2rem;
   color: #666;
+}
+
+.success-message {
+  background: #d1e7dd;
+  color: #0f5132;
+  border: 1px solid #badbcc;
+  border-radius: 4px;
+  text-align: center;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+
+.trending-section {
+  margin-bottom: 2.5rem;
+  padding: 1.5rem;
+  background: #f7f9ff;
+  border: 1px solid #e1e7ff;
+  border-radius: 12px;
+}
+
+.trending-section h2 {
+  margin: 0;
+  color: #2b3a67;
+  font-size: 1.6rem;
 }
 
 .error-message {
@@ -66,6 +107,10 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 
+.trending-card {
+  border: 1px solid #e6ecff;
+}
+
 .thumbnail-container {
   position: relative;
   width: 100%;
@@ -92,6 +137,19 @@
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 0.85rem;
+}
+
+.trending-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: #ffb703;
+  color: #1b1b1b;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .video-info {
@@ -258,6 +316,16 @@
     flex-direction: column;
     gap: 1rem;
     align-items: stretch;
+  }
+
+  .section-header {
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: stretch;
+  }
+
+  .trending-input {
+    width: 100%;
   }
 
   .videos-grid {

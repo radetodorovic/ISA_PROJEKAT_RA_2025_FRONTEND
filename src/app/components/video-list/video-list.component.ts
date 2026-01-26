@@ -1,21 +1,29 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute } from '@angular/router';
 import { VideoService } from '../../services/video.service';
 import { finalize } from 'rxjs/operators';
 import { VideoPost } from '../../models/video-post';
 import { environment } from '../../config/environment';
+import { TrendingVideo } from '../../models/trending-video';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-video-list',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './video-list.component.html',
   styleUrl: './video-list.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class VideoListComponent implements OnInit {
   videos: VideoPost[] = [];
+  trending: TrendingVideo[] = [];
+  trendingLoading: boolean = false;
+  trendingError: string = '';
+  trendingRunMessage: string = '';
+  trendingLocation: string = '';
   loading: boolean = true;
   error: string = '';
   private apiBaseUrl = environment.apiBaseUrl;
@@ -23,17 +31,24 @@ export class VideoListComponent implements OnInit {
   constructor(
     private videoService: VideoService,
     private cdr: ChangeDetectorRef,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    public authService: AuthService
   ) {}
 
   ngOnInit(): void {
     // Učitaj videe odmah
     this.loadVideos();
+    if (this.authService.isAuthenticated()) {
+      this.loadTrending();
+    }
     
     // Takođe, osluškuj route navigacije - ako korisnik ide na /videos, osvezi videe
     this.route.url.subscribe(() => {
       console.log('[VideoList] Route activated, reloading videos...');
       this.loadVideos();
+      if (this.authService.isAuthenticated()) {
+        this.loadTrending();
+      }
     });
   }
 
@@ -86,6 +101,57 @@ export class VideoListComponent implements OnInit {
           this.cdr.markForCheck();
         }
       });
+  }
+
+  loadTrending(): void {
+    this.trendingLoading = true;
+    this.trendingError = '';
+    this.trendingRunMessage = '';
+    this.videoService
+      .getTrendingVideos(this.trendingLocation || undefined)
+      .pipe(
+        finalize(() => {
+          this.trendingLoading = false;
+          this.cdr.markForCheck();
+        })
+      )
+      .subscribe({
+        next: (items) => {
+          this.trending = Array.isArray(items) ? items : [];
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          console.error('Error loading trending videos:', err);
+          if (err?.status === 401) {
+            this.trendingError = 'Please login to view trending videos.';
+          } else {
+            this.trendingError = 'Failed to load trending videos.';
+          }
+          this.cdr.markForCheck();
+        }
+      });
+  }
+
+  runTrendingPipeline(): void {
+    this.trendingLoading = true;
+    this.trendingError = '';
+    this.trendingRunMessage = '';
+    this.videoService.runTrendingPipeline().subscribe({
+      next: () => {
+        this.trendingRunMessage = 'Trending pipeline pokrenut. Osvezavam listu...';
+        this.loadTrending();
+      },
+      error: (err) => {
+        console.error('Error running trending pipeline:', err);
+        if (err?.status === 401) {
+          this.trendingError = 'Please login to run the trending pipeline.';
+        } else {
+          this.trendingError = 'Failed to run trending pipeline.';
+        }
+        this.trendingLoading = false;
+        this.cdr.markForCheck();
+      }
+    });
   }
 
   getThumbnailUrl(video: VideoPost): string {

@@ -9,6 +9,78 @@
     </div>
   </div>
 
+  <div *ngIf="authService.isAuthenticated()" class="trending-section">
+    <div class="section-header">
+      <h2>Trending Near You</h2>
+      <div class="header-actions">
+        <input
+          class="trending-input"
+          type="text"
+          placeholder="Enter location (e.g. belgrade)"
+          [(ngModel)]="trendingLocation"
+        />
+        <button (click)="runTrendingPipeline()" class="btn btn-primary" [disabled]="trendingLoading">
+          Run Trending
+        </button>
+        <button (click)="loadTrending()" class="btn btn-secondary" [disabled]="trendingLoading">
+          {{ trendingLoading ? 'Loading...' : 'Refresh' }}
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="trendingLoading" class="loading">
+      <p>Loading trending videos...</p>
+    </div>
+
+    <div *ngIf="trendingRunMessage" class="success-message">
+      {{ trendingRunMessage }}
+    </div>
+
+    <div *ngIf="trendingError" class="error-message">
+      {{ trendingError }}
+      <button (click)="loadTrending()" class="btn btn-secondary">Try Again</button>
+    </div>
+
+    <div *ngIf="!trendingLoading && !trendingError && trending.length === 0" class="no-videos">
+      <p>No trending videos available yet.</p>
+    </div>
+
+    <div *ngIf="!trendingLoading && trending.length > 0" class="videos-grid trending-grid">
+      <div *ngFor="let item of trending" class="video-card trending-card">
+        <div class="thumbnail-container">
+          <img [src]="getThumbnailUrl(item.video)" [alt]="item.video.title" class="thumbnail" />
+          <div class="video-duration">
+            <span>{{ formatFileSize(item.video.videoSize || 0) }}</span>
+          </div>
+          <div class="trending-badge">#{{ item.rank }}</div>
+        </div>
+
+        <div class="video-info">
+          <h3 class="video-title">{{ item.video.title }}</h3>
+          <p class="video-description">{{ item.video.description }}</p>
+
+          <div class="video-meta">
+            <div class="meta-item">
+              <span class="icon">🔥</span>
+              <span>{{ item.score }} score</span>
+            </div>
+            <div class="meta-item">
+              <span class="icon">📍</span>
+              <span>{{ item.location }}</span>
+            </div>
+          </div>
+
+          <div class="video-footer">
+            <span class="video-date">{{ item.runAt | date:'medium' }}</span>
+            <span *ngIf="item.video.location" class="video-location">📍 {{ item.video.location }}</span>
+          </div>
+
+          <a [routerLink]="['/videos', item.video.id]" class="btn btn-watch">Watch Video</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div *ngIf="loading" class="loading">
     <p>Loading videos...</p>
   </div>

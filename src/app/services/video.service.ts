@@ -5,6 +5,7 @@ import { tap, shareReplay } from 'rxjs/operators';
 import { VideoPost, VideoUploadRequest } from '../models/video-post';
 import { Comment, PaginatedComments } from '../models/comment';
 import { AuthService } from './auth.service';
+import { TrendingVideo } from '../models/trending-video';
 
 @Injectable({
   providedIn: 'root',
@@ -27,6 +28,25 @@ export class VideoService {
    */
   getAllVideos(): Observable<VideoPost[]> {
     return this.http.get<VideoPost[]>(this.API_URL);
+  }
+
+  /**
+   * Get trending videos for the current user/location
+   */
+  getTrendingVideos(location?: string): Observable<TrendingVideo[]> {
+    const token = this.authService.getToken();
+    const headers = token ? new HttpHeaders().set('Authorization', `Bearer ${token}`) : new HttpHeaders();
+    const params = location ? `?location=${encodeURIComponent(location)}` : '';
+    return this.http.get<TrendingVideo[]>(`http://localhost:8080/api/trending${params}`, { headers });
+  }
+
+  /**
+   * Trigger trending pipeline manually (requires auth)
+   */
+  runTrendingPipeline(): Observable<any> {
+    const token = this.authService.getToken();
+    const headers = token ? new HttpHeaders().set('Authorization', `Bearer ${token}`) : new HttpHeaders();
+    return this.http.post(`http://localhost:8080/api/trending/run`, {}, { headers, responseType: 'text' });
   }
 
   /**
