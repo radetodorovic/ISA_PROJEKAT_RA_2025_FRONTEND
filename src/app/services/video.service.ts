@@ -3,6 +3,7 @@ import { HttpClient, HttpEvent, HttpHeaders, HttpRequest } from '@angular/common
 import { Observable, of } from 'rxjs';
 import { tap, shareReplay } from 'rxjs/operators';
 import { VideoPost, VideoUploadRequest } from '../models/video-post';
+import { TrendingVideo } from '../models/trending-video';
 import { Comment, PaginatedComments } from '../models/comment';
 import { AuthService } from './auth.service';
 
@@ -27,6 +28,31 @@ export class VideoService {
    */
   getAllVideos(): Observable<VideoPost[]> {
     return this.http.get<VideoPost[]>(this.API_URL);
+  }
+
+  /**
+   * Get trending videos with optional geo and pagination
+   */
+  getTrendingVideos(params: {
+    lat?: number;
+    lon?: number;
+    radius?: number;
+    limit?: number;
+    page?: number;
+  }): Observable<TrendingVideo[]> {
+    const { lat, lon, radius = 10, limit = 6, page = 0 } = params;
+    const searchParams = new URLSearchParams();
+    if (lat != null && lon != null) {
+      searchParams.set('lat', String(lat));
+      searchParams.set('lon', String(lon));
+    }
+    searchParams.set('radius', String(radius));
+    searchParams.set('limit', String(limit));
+    searchParams.set('page', String(page));
+    const qs = searchParams.toString();
+    const url = `${this.API_URL}/trending${qs ? `?${qs}` : ''}`;
+    console.log(`[VideoService] GET ${url}`);
+    return this.http.get<TrendingVideo[]>(url);
   }
 
   /**

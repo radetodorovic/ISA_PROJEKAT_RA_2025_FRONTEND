@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api, { Video } from '../api';
+import TrendingList from './TrendingList';
 import VideoCard from './VideoCard';
 
 const VideoList: React.FC = () => {
@@ -32,6 +33,8 @@ const VideoList: React.FC = () => {
 
   return (
     <div className="container">
+      <TrendingList />
+      <h2 style={{ marginBottom: 8 }}>All videos</h2>
       <div className="grid">
         {videos.map((v) => (
           <VideoCard key={v.id} video={v} />

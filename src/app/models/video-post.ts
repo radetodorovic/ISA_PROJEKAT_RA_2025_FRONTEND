@@ -9,6 +9,11 @@ export interface VideoPost {
   createdAt?: string;
   uploadedAt?: string;
   location?: string;
+  // Optional geo coordinates (backend may return latitude/longitude or lat/lon)
+  latitude?: number;
+  longitude?: number;
+  lat?: number;
+  lon?: number;
   userId?: number;
   user?: {
     id: number;

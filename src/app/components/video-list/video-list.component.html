@@ -1,4 +1,60 @@
 <div class="video-list-container">
+  <section class="trending-section">
+    <div class="trending-header">
+      <div>
+        <p class="trending-overline">Lokalni trendovi</p>
+        <h2 class="trending-heading">Trending near you</h2>
+        <p class="muted small">{{ locationMessage }}</p>
+        <div *ngIf="locationPhase === 'granted' && coords" class="muted small">
+          Vaša lokacija: <strong>{{ coordText() }}</strong>
+          <button class="inline-btn" (click)="copyCoords()" title="Kopiraj koordinate">Copy</button>
+          <button class="inline-btn" (click)="openMaps()" title="Otvori u Google Maps">Maps</button>
+        </div>
+      </div>
+      <div class="trending-controls">
+        <label class="control">
+          <span>Radius (km)</span>
+          <input type="number" min="1" max="200" [(ngModel)]="trendingRadius" (change)="onRadiusChange(trendingRadius)" />
+        </label>
+        <label class="control">
+          <span>Limit</span>
+          <select [(ngModel)]="trendingLimit" (change)="onLimitChange(trendingLimit)">
+            <option *ngFor="let v of [6,8,12,16,24]" [value]="v">{{ v }}</option>
+          </select>
+        </label>
+        <div class="control actions">
+          <button (click)="refreshTrending()" [disabled]="trendingLoading">Osveži</button>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="trendingLoading" class="muted" aria-live="polite">Učitavam trending videe...</div>
+    <div *ngIf="trendingError" class="error-message">{{ trendingError }}</div>
+    <div *ngIf="!trendingLoading && !trendingError && trending.length === 0" class="muted">Nema videa u odabranom radijusu.</div>
+
+    <div class="trending-grid">
+      <div *ngFor="let tv of trending" class="trending-card">
+        <div class="trending-thumb-wrap">
+          <img [src]="tv.thumbnailPath || ''" [alt]="tv.title" class="trending-thumb" />
+          <span class="trending-score">Score {{ tv.trendingScore | number:'1.0-0' }}</span>
+        </div>
+        <div class="trending-body">
+          <h4 class="trending-title">{{ tv.title }}</h4>
+          <p class="trending-meta">{{ distanceLabel(tv.distanceKm) }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="trending-footer">
+      <div class="muted small">{{ lastUpdated ? ('Ažurirano u ' + lastUpdated) : 'Nije još učitano' }}</div>
+      <div class="pagination">
+        <button (click)="prevPage()" [disabled]="trendingPage === 0 || trendingLoading">Prev</button>
+        <span class="muted">Strana {{ trendingPage + 1 }}</span>
+        <button (click)="nextPage()" [disabled]="trendingLoading || trending.length < trendingLimit">Next</button>
+      </div>
+    </div>
+  </section>
+
   <div class="header">
     <h2>All Videos</h2>
     <div class="header-actions">
@@ -71,7 +127,9 @@
 
         <div class="video-footer">
           <span class="video-date">{{ getDisplayDate(video) }}</span>
-          <span *ngIf="video.location" class="video-location">📍 {{ video.location }}</span>
+          <ng-container *ngIf="getVideoLocationDisplay(video) as loc">
+            <span class="video-location">📍 {{ loc }}</span>
+          </ng-container>
         </div>
 
         <a [routerLink]="['/videos', video.id]" class="btn btn-watch">Watch Video</a>

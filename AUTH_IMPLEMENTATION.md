@@ -369,3 +369,34 @@ Update component CSS files:
 ### Protected route redirecting to login
 - Verify JWT is stored in localStorage under key `authToken`
 - Check token validity with backend
+
+## Trending Videos (Geo-aware)
+
+### Overview
+- Frontend supports geo-aware trending videos via `GET /api/videos/trending`.
+- If geolocation is granted, requests include `lat` and `lon` with `radius`, `limit`, `page`.
+- If denied/unavailable, requests exclude `lat`/`lon` and backend returns global trends.
+
+### Implementation (Angular)
+- Service: `src/app/services/video.service.ts`
+  - `getTrendingVideos({ lat?, lon?, radius=10, limit=6, page=0 })` builds query params without empty strings.
+- Component: `src/app/components/video-list/video-list.component.ts`
+  - Attempts geolocation on init; sets UI state and calls service accordingly.
+  - UI messages: loading, denied/unavailable fallback, no results, and errors.
+- Template: `src/app/components/video-list/video-list.component.html`
+  - Controls for radius, limit, refresh, simple pagination.
+
+### Checklist
+- DONE: Do not send empty strings for `lat`/`lon` (omit params if not available).
+- DONE: Geolocation handling with `navigator.geolocation.getCurrentPosition` and graceful fallback.
+- DONE: Display message: "Lokacija odbijena; prikazujemo globalne trendove" when denied.
+- DONE: UI states for loading / no results / global fallback; controls for refresh/radius/limit.
+- TODO: Verify in DevTools → Network that `GET /api/videos/trending` carries correct params (names `lat`/`lon`).
+
+### Quick Copilot Prompt (srpski)
+"Dodaj/izmeni frontend logiku za 'local trending' na stranici sa video listom:
+1) Napravi funkciju koja pokušava da dohvati geolokaciju preko `navigator.geolocation.getCurrentPosition`.
+2) Ako korisnik dozvoli, pozovi backend GET /api/videos/trending sa query parametrima `lat` i `lon` (decimalne vrednosti) i prosledi `radius`, `limit` i `page`.
+3) Ako korisnik odbije ili geolokacija nije dostupna, pozovi isti endpoint BEZ `lat`/`lon` (samo `radius`/`limit`), i prikaži poruku 'Lokacija odbijena; prikazujemo globalne trendove'.
+4) Rukuj greškama i prikaži poruku korisniku ako backend vrati grešku.
+5) Dovrši UI status porukama: loading, nema videa u radijusu, prikaz globalnih trendova. Koristi Angular HttpClient i minimalne izmene u postojećem servisu/komponenti."
