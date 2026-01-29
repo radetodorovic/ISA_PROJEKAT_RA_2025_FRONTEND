@@ -1,10 +1,12 @@
-import { Component, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpEventType } from '@angular/common/http';
 import { VideoService } from '../../services/video.service';
 import { AuthService } from '../../services/auth.service';
 import { VideoPost, VideoUploadRequest } from '../../models/video-post';
+import * as L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 @Component({
   selector: 'app-video-upload',
@@ -13,13 +15,15 @@ import { VideoPost, VideoUploadRequest } from '../../models/video-post';
   templateUrl: './video-upload.component.html',
   styleUrl: './video-upload.component.css',
 })
-export class VideoUploadComponent implements OnInit {
+export class VideoUploadComponent implements OnInit, AfterViewInit, OnDestroy {
   // Form polja
   title: string = '';
   description: string = '';
   tagsInput: string = '';
   tags: string[] = [];
   location: string = '';
+  videoLatitude: number | null = null;
+  videoLongitude: number | null = null;
   
   // Fajlovi
   thumbnailFile: File | null = null;
@@ -45,12 +49,83 @@ export class VideoUploadComponent implements OnInit {
     private ngZone: NgZone,
     private cdr: ChangeDetectorRef
   ) {}
+
+  private map: L.Map | null = null;
+  private marker: L.Marker | null = null;
   
   ngOnInit(): void {
     // Proveri da li je korisnik ulogovan
     if (!this.authService.getToken()) {
       this.generalError = 'Morate biti ulogovani da biste postavili video';
     }
+  }
+
+  ngAfterViewInit(): void {
+    this.initMap();
+  }
+
+  ngOnDestroy(): void {
+    if (this.map) {
+      this.map.remove();
+      this.map = null;
+    }
+  }
+
+  private initMap(): void {
+    const container = document.getElementById('upload-map');
+    if (!container) return;
+
+    L.Icon.Default.mergeOptions({
+      iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png'
+    });
+
+    this.map = L.map(container).setView([44.8176, 20.4633], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(this.map);
+
+    this.map.on('click', (e: L.LeafletMouseEvent) => {
+      this.setVideoLocation(e.latlng.lat, e.latlng.lng);
+    });
+  }
+
+  setVideoLocation(lat: number, lng: number): void {
+    this.videoLatitude = Number(lat.toFixed(6));
+    this.videoLongitude = Number(lng.toFixed(6));
+
+    if (this.map) {
+      if (!this.marker) {
+        this.marker = L.marker([this.videoLatitude, this.videoLongitude]).addTo(this.map);
+      } else {
+        this.marker.setLatLng([this.videoLatitude, this.videoLongitude]);
+      }
+    }
+
+    if (!this.location.trim()) {
+      this.location = `${this.videoLatitude}, ${this.videoLongitude}`;
+    }
+  }
+
+  useMyLocationForVideo(): void {
+    if (!navigator.geolocation) {
+      this.generalError = 'Geolocation nije podrÅ¾an u ovom pregledaÄu.';
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        this.setVideoLocation(pos.coords.latitude, pos.coords.longitude);
+        if (this.map) {
+          this.map.setView([this.videoLatitude || pos.coords.latitude, this.videoLongitude || pos.coords.longitude], 14);
+        }
+      },
+      () => {
+        this.generalError = 'NeuspeÅ¡no preuzimanje lokacije.';
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
   }
   
   /**
@@ -183,7 +258,9 @@ export class VideoUploadComponent implements OnInit {
       tags: this.tags,
       thumbnail: this.thumbnailFile!,
       video: this.videoFile!,
-      location: this.location.trim() || undefined
+      location: this.location.trim() || undefined,
+      latitude: this.videoLatitude ?? undefined,
+      longitude: this.videoLongitude ?? undefined
     };
     
     this.isUploading = true;
@@ -267,6 +344,8 @@ export class VideoUploadComponent implements OnInit {
     this.tagsInput = '';
     this.tags = [];
     this.location = '';
+    this.videoLatitude = null;
+    this.videoLongitude = null;
     this.thumbnailFile = null;
     this.videoFile = null;
     this.thumbnailPreview = null;
@@ -278,6 +357,11 @@ export class VideoUploadComponent implements OnInit {
     this.generalError = '';
     this.uploadTimeoutWarning = false;
     this.uploadStartTime = 0;
+
+    if (this.marker && this.map) {
+      this.map.removeLayer(this.marker);
+      this.marker = null;
+    }
     
     // Reset file inputs
     const thumbnailInput = document.getElementById('thumbnail') as HTMLInputElement;
@@ -296,4 +380,6 @@ export class VideoUploadComponent implements OnInit {
     return this.videoService.formatFileSize(file.size);
   }
 }
+
+
 

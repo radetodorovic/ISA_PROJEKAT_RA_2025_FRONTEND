@@ -33,10 +33,28 @@ export class VideoService {
   /**
    * Get trending videos for the current user/location
    */
-  getTrendingVideos(location?: string): Observable<TrendingVideo[]> {
+  getTrendingVideos(options?: {
+    location?: string;
+    latitude?: number;
+    longitude?: number;
+    radiusMeters?: number;
+  }): Observable<TrendingVideo[]> {
     const token = this.authService.getToken();
     const headers = token ? new HttpHeaders().set('Authorization', `Bearer ${token}`) : new HttpHeaders();
-    const params = location ? `?location=${encodeURIComponent(location)}` : '';
+    const paramsList: string[] = [];
+    if (options?.location) {
+      paramsList.push(`location=${encodeURIComponent(options.location)}`);
+    }
+    if (typeof options?.latitude === 'number') {
+      paramsList.push(`lat=${encodeURIComponent(options.latitude)}`);
+    }
+    if (typeof options?.longitude === 'number') {
+      paramsList.push(`lng=${encodeURIComponent(options.longitude)}`);
+    }
+    if (typeof options?.radiusMeters === 'number') {
+      paramsList.push(`radiusMeters=${encodeURIComponent(options.radiusMeters)}`);
+    }
+    const params = paramsList.length > 0 ? `?${paramsList.join('&')}` : '';
     return this.http.get<TrendingVideo[]>(`http://localhost:8080/api/trending${params}`, { headers });
   }
 
@@ -97,6 +115,10 @@ export class VideoService {
     
     if (request.location) {
       formData.append('location', request.location);
+    }
+    if (typeof request.latitude === 'number' && typeof request.longitude === 'number') {
+      formData.append('latitude', request.latitude.toString());
+      formData.append('longitude', request.longitude.toString());
     }
 
     // NAPOMENA: userId se NE šalje - backend ga uzima iz JWT tokena

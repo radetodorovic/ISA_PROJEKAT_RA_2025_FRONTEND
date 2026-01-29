@@ -9,6 +9,8 @@ import { environment } from '../config/environment';
 export class AuthService {
   private readonly TOKEN_KEY = 'jwt_token';
   private readonly USER_ID_KEY = 'user_id';
+  private readonly USER_LOCATION_KEY = 'user_location';
+  private readonly USER_RADIUS_KEY = 'user_radius_m';
   private readonly apiBaseUrl = environment.apiBaseUrl;
 
   constructor(private http: HttpClient) { }
@@ -74,6 +76,41 @@ export class AuthService {
   logout(): void {
     this.removeToken();
     localStorage.removeItem(this.USER_ID_KEY);
+    localStorage.removeItem(this.USER_LOCATION_KEY);
+    localStorage.removeItem(this.USER_RADIUS_KEY);
+  }
+
+  setUserLocation(lat: number, lng: number): void {
+    localStorage.setItem(this.USER_LOCATION_KEY, JSON.stringify({ lat, lng }));
+  }
+
+  getUserLocation(): { lat: number; lng: number } | null {
+    const raw = localStorage.getItem(this.USER_LOCATION_KEY);
+    if (!raw) return null;
+    try {
+      const parsed = JSON.parse(raw);
+      if (typeof parsed?.lat === 'number' && typeof parsed?.lng === 'number') {
+        return { lat: parsed.lat, lng: parsed.lng };
+      }
+    } catch (e) {
+      return null;
+    }
+    return null;
+  }
+
+  clearUserLocation(): void {
+    localStorage.removeItem(this.USER_LOCATION_KEY);
+  }
+
+  setUserRadius(radiusMeters: number): void {
+    localStorage.setItem(this.USER_RADIUS_KEY, radiusMeters.toString());
+  }
+
+  getUserRadius(): number | null {
+    const raw = localStorage.getItem(this.USER_RADIUS_KEY);
+    if (!raw) return null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
   }
 
   // Ensure userId is known after login (or app refresh)

@@ -146,3 +146,43 @@ button[disabled] {
   color: #666;
   font-size: 0.9em;
 }
+
+/* Leaflet thumbnail markers (global styles for divIcon) */
+.video-thumb-marker {
+  background: transparent;
+  border: none;
+}
+
+.video-thumb-marker__pin {
+  position: relative;
+  width: 48px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-thumb-marker__pin::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  background: #2f7d32;
+  transform: translateX(-50%) rotate(45deg);
+  border-radius: 2px;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.25);
+}
+
+.video-thumb-marker__thumb {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center;
+  border: 3px solid #2f7d32;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 1;
+}

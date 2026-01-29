@@ -13,12 +13,15 @@
     <div class="section-header">
       <h2>Trending Near You</h2>
       <div class="header-actions">
-        <input
-          class="trending-input"
-          type="text"
-          placeholder="Enter location (e.g. belgrade)"
-          [(ngModel)]="trendingLocation"
-        />
+        <button (click)="useMyLocationForTrending()" class="btn btn-secondary" [disabled]="trendingLoading">
+          Use My Location
+        </button>
+        <button (click)="saveTrendingLocation()" class="btn btn-primary" [disabled]="trendingLoading">
+          Save Location
+        </button>
+        <button (click)="clearTrendingLocation()" class="btn btn-secondary" [disabled]="trendingLoading">
+          Clear Location
+        </button>
         <button (click)="runTrendingPipeline()" class="btn btn-primary" [disabled]="trendingLoading">
           Run Trending
         </button>
@@ -26,6 +29,35 @@
           {{ trendingLoading ? 'Loading...' : 'Refresh' }}
         </button>
       </div>
+    </div>
+
+    <div class="location-panel">
+      <div class="location-controls">
+        <div class="radius-control">
+          <label for="radiusMeters">Radius (meters)</label>
+          <input
+            id="radiusMeters"
+            type="number"
+            min="50"
+            max="20000"
+            step="50"
+            [(ngModel)]="radiusMeters"
+            (input)="updateRadiusCircle()"
+          />
+          <input
+            type="range"
+            min="50"
+            max="20000"
+            step="50"
+            [(ngModel)]="radiusMeters"
+            (input)="updateRadiusCircle()"
+          />
+        </div>
+        <div class="coords" *ngIf="selectedLatitude !== null && selectedLongitude !== null">
+          Lat: {{ selectedLatitude }} , Lng: {{ selectedLongitude }}
+        </div>
+      </div>
+      <div id="trending-map" class="map"></div>
     </div>
 
     <div *ngIf="trendingLoading" class="loading">

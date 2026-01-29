@@ -105,6 +105,20 @@
       />
     </div>
 
+    <!-- Map Location Picker (Optional) -->
+    <div class="form-group">
+      <label>Pick location on map (optional)</label>
+      <div class="map-actions">
+        <button type="button" class="btn btn-secondary" (click)="useMyLocationForVideo()" [disabled]="isUploading">
+          Use My Location
+        </button>
+        <span *ngIf="videoLatitude !== null && videoLongitude !== null" class="map-coords">
+          Lat: {{ videoLatitude }} , Lng: {{ videoLongitude }}
+        </span>
+      </div>
+      <div id="upload-map" class="map"></div>
+    </div>
+
     <!-- Thumbnail Upload -->
     <div class="form-group">
       <label for="thumbnail">Thumbnail (Image) *</label>

@@ -9,6 +9,8 @@ export interface VideoPost {
   createdAt?: string;
   uploadedAt?: string;
   location?: string;
+  latitude?: number;
+  longitude?: number;
   userId?: number;
   user?: {
     id: number;
@@ -26,4 +28,6 @@ export interface VideoUploadRequest {
   thumbnail: File;
   video: File;
   location?: string;
+  latitude?: number;
+  longitude?: number;
 }

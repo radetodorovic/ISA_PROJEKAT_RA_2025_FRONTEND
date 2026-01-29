@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute } from '@angular/router';
@@ -8,6 +8,8 @@ import { VideoPost } from '../../models/video-post';
 import { environment } from '../../config/environment';
 import { TrendingVideo } from '../../models/trending-video';
 import { AuthService } from '../../services/auth.service';
+import * as L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 @Component({
   selector: 'app-video-list',
@@ -17,16 +19,22 @@ import { AuthService } from '../../services/auth.service';
   styleUrl: './video-list.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class VideoListComponent implements OnInit {
+export class VideoListComponent implements OnInit, AfterViewInit, OnDestroy {
   videos: VideoPost[] = [];
   trending: TrendingVideo[] = [];
   trendingLoading: boolean = false;
   trendingError: string = '';
   trendingRunMessage: string = '';
-  trendingLocation: string = '';
+  selectedLatitude: number | null = null;
+  selectedLongitude: number | null = null;
+  radiusMeters: number = 200;
   loading: boolean = true;
   error: string = '';
   private apiBaseUrl = environment.apiBaseUrl;
+  private map: L.Map | null = null;
+  private marker: L.Marker | null = null;
+  private radiusCircle: L.Circle | null = null;
+  private videoMarkers: L.LayerGroup | null = null;
 
   constructor(
     private videoService: VideoService,
@@ -36,20 +44,36 @@ export class VideoListComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // Učitaj videe odmah
+    // Ucitaj videe odmah
     this.loadVideos();
     if (this.authService.isAuthenticated()) {
+      this.loadSavedLocation();
       this.loadTrending();
     }
-    
-    // Takođe, osluškuj route navigacije - ako korisnik ide na /videos, osvezi videe
+
+    // Takodje, osluskivaj route navigacije - ako korisnik ide na /videos, osvezi videe
     this.route.url.subscribe(() => {
       console.log('[VideoList] Route activated, reloading videos...');
       this.loadVideos();
       if (this.authService.isAuthenticated()) {
+        this.loadSavedLocation();
         this.loadTrending();
       }
     });
+  }
+
+  ngAfterViewInit(): void {
+    if (this.authService.isAuthenticated()) {
+      this.initMap();
+      this.renderTrendingMarkers();
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (this.map) {
+      this.map.remove();
+      this.map = null;
+    }
   }
 
   loadVideos(): void {
@@ -108,7 +132,7 @@ export class VideoListComponent implements OnInit {
     this.trendingError = '';
     this.trendingRunMessage = '';
     this.videoService
-      .getTrendingVideos(this.trendingLocation || undefined)
+      .getTrendingVideos(this.getTrendingQuery())
       .pipe(
         finalize(() => {
           this.trendingLoading = false;
@@ -118,6 +142,7 @@ export class VideoListComponent implements OnInit {
       .subscribe({
         next: (items) => {
           this.trending = Array.isArray(items) ? items : [];
+          this.renderTrendingMarkers();
           this.cdr.markForCheck();
         },
         error: (err) => {
@@ -152,6 +177,185 @@ export class VideoListComponent implements OnInit {
         this.cdr.markForCheck();
       }
     });
+  }
+
+  private getTrendingQuery(): { latitude?: number; longitude?: number; radiusMeters?: number } | undefined {
+    if (this.selectedLatitude != null && this.selectedLongitude != null) {
+      return {
+        latitude: this.selectedLatitude,
+        longitude: this.selectedLongitude,
+        radiusMeters: this.radiusMeters
+      };
+    }
+    return undefined;
+  }
+
+  private loadSavedLocation(): void {
+    const saved = this.authService.getUserLocation();
+    const savedRadius = this.authService.getUserRadius();
+    if (saved) {
+      this.selectedLatitude = saved.lat;
+      this.selectedLongitude = saved.lng;
+    }
+    if (typeof savedRadius === 'number' && savedRadius > 0) {
+      this.radiusMeters = savedRadius;
+    }
+  }
+
+  private initMap(): void {
+    const container = document.getElementById('trending-map');
+    if (!container) return;
+
+    L.Icon.Default.mergeOptions({
+      iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png'
+    });
+
+    const initialLat = this.selectedLatitude ?? 44.8176;
+    const initialLng = this.selectedLongitude ?? 20.4633;
+    this.map = L.map(container).setView([initialLat, initialLng], 12);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(this.map);
+
+    this.videoMarkers = L.layerGroup().addTo(this.map);
+
+    if (this.selectedLatitude != null && this.selectedLongitude != null) {
+      this.placeMarker(this.selectedLatitude, this.selectedLongitude);
+      this.updateRadiusCircle();
+    }
+
+    this.map.on('click', (e: L.LeafletMouseEvent) => {
+      this.selectedLatitude = Number(e.latlng.lat.toFixed(6));
+      this.selectedLongitude = Number(e.latlng.lng.toFixed(6));
+      this.placeMarker(this.selectedLatitude, this.selectedLongitude);
+      this.updateRadiusCircle();
+      this.cdr.markForCheck();
+    });
+  }
+
+  private placeMarker(lat: number, lng: number): void {
+    if (!this.map) return;
+    if (!this.marker) {
+      this.marker = L.marker([lat, lng], { icon: this.getUserLocationIcon() }).addTo(this.map);
+    } else {
+      this.marker.setLatLng([lat, lng]);
+    }
+  }
+
+  private getUserLocationIcon(): L.DivIcon {
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="34" height="42" viewBox="0 0 34 42">
+        <circle cx="17" cy="10" r="5" stroke="#1f3b73" stroke-width="2" fill="#ffffff"/>
+        <line x1="17" y1="15" x2="17" y2="28" stroke="#1f3b73" stroke-width="2"/>
+        <line x1="10" y1="20" x2="24" y2="20" stroke="#1f3b73" stroke-width="2"/>
+        <line x1="17" y1="28" x2="11" y2="36" stroke="#1f3b73" stroke-width="2"/>
+        <line x1="17" y1="28" x2="23" y2="36" stroke="#1f3b73" stroke-width="2"/>
+        <circle cx="17" cy="10" r="6.5" stroke="#4f8bff" stroke-width="2" fill="none" opacity="0.6"/>
+      </svg>
+    `;
+    const html = `<div style="width:34px;height:42px;">${svg}</div>`;
+    return L.divIcon({
+      className: 'user-location-marker',
+      html,
+      iconSize: [34, 42],
+      iconAnchor: [17, 36]
+    });
+  }
+
+  updateRadiusCircle(): void {
+    if (!this.map || this.selectedLatitude == null || this.selectedLongitude == null) {
+      return;
+    }
+    if (!this.radiusCircle) {
+      this.radiusCircle = L.circle([this.selectedLatitude, this.selectedLongitude], {
+        radius: this.radiusMeters,
+        color: '#4caf50',
+        fillColor: '#4caf50',
+        fillOpacity: 0.15
+      }).addTo(this.map);
+    } else {
+      this.radiusCircle.setLatLng([this.selectedLatitude, this.selectedLongitude]);
+      this.radiusCircle.setRadius(this.radiusMeters);
+    }
+  }
+
+  useMyLocationForTrending(): void {
+    if (!navigator.geolocation) {
+      this.trendingError = 'Geolocation nije podrzan u ovom pregledacu.';
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        this.selectedLatitude = Number(pos.coords.latitude.toFixed(6));
+        this.selectedLongitude = Number(pos.coords.longitude.toFixed(6));
+        this.placeMarker(this.selectedLatitude, this.selectedLongitude);
+        this.updateRadiusCircle();
+        if (this.map) {
+          this.map.setView([this.selectedLatitude, this.selectedLongitude], 14);
+        }
+        this.cdr.markForCheck();
+      },
+      () => {
+        this.trendingError = 'Neuspesno preuzimanje lokacije.';
+        this.cdr.markForCheck();
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  }
+
+  saveTrendingLocation(): void {
+    if (this.selectedLatitude == null || this.selectedLongitude == null) {
+      this.trendingError = 'Izaberi lokaciju na mapi pre cuvanja.';
+      return;
+    }
+    this.authService.setUserLocation(this.selectedLatitude, this.selectedLongitude);
+    this.authService.setUserRadius(this.radiusMeters);
+    this.trendingRunMessage = 'Lokacija sacuvana. Osvezavam trending...';
+    this.loadTrending();
+  }
+
+  clearTrendingLocation(): void {
+    this.selectedLatitude = null;
+    this.selectedLongitude = null;
+    this.authService.clearUserLocation();
+    if (this.radiusCircle && this.map) {
+      this.map.removeLayer(this.radiusCircle);
+      this.radiusCircle = null;
+    }
+    if (this.marker && this.map) {
+      this.map.removeLayer(this.marker);
+      this.marker = null;
+    }
+    this.trendingRunMessage = 'Lokacija uklonjena. Prikazujem globalni trending.';
+    this.loadTrending();
+  }
+
+  private renderTrendingMarkers(): void {
+    if (!this.map || !this.videoMarkers) return;
+    this.videoMarkers.clearLayers();
+
+    const items = Array.isArray(this.trending) ? this.trending : [];
+    for (const item of items) {
+      const video = item?.video;
+      if (!video || typeof video.latitude !== 'number' || typeof video.longitude !== 'number') {
+        continue;
+      }
+      const thumbUrl = this.getThumbnailUrl(video);
+      const icon = L.divIcon({
+        className: 'video-thumb-marker',
+        html: `<div class="video-thumb-marker__pin"><div class="video-thumb-marker__thumb" style="background-image:url('${thumbUrl}')"></div></div>`,
+        iconSize: [48, 56],
+        iconAnchor: [24, 54]
+      });
+
+      const marker = L.marker([video.latitude, video.longitude], { icon });
+      marker.bindPopup(`<strong>${video.title || 'Video'}</strong>`);
+      marker.addTo(this.videoMarkers);
+    }
   }
 
   getThumbnailUrl(video: VideoPost): string {
@@ -200,3 +404,6 @@ export class VideoListComponent implements OnInit {
     return this.videoService.formatFileSize(bytes);
   }
 }
+
+
+
