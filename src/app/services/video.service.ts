@@ -68,6 +68,15 @@ export class VideoService {
   }
 
   /**
+   * Get user's location from IP address via backend GeoIP endpoint
+   */
+  getUserLocationFromIP(): Observable<{ lat: number; lon: number } | { error: string }> {
+    const token = this.authService.getToken();
+    const headers = token ? new HttpHeaders().set('Authorization', `Bearer ${token}`) : new HttpHeaders();
+    return this.http.get<{ lat: number; lon: number } | { error: string }>('http://localhost:8080/api/geoip', { headers });
+  }
+
+  /**
    * Get single video by ID
    */
   getVideoById(id: number): Observable<VideoPost> {

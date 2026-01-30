@@ -1,0 +1,75 @@
+{
+  "testDate": "2026-01-30T14:43:54.330Z",
+  "results": [
+    {
+      "interval": "5 sekundi",
+      "intervalSeconds": 5,
+      "avgResponseTime": 32,
+      "minResponseTime": 14,
+      "maxResponseTime": 130,
+      "successRate": "100.0",
+      "totalTests": 10,
+      "errors": 0
+    },
+    {
+      "interval": "10 sekundi",
+      "intervalSeconds": 10,
+      "avgResponseTime": 30,
+      "minResponseTime": 18,
+      "maxResponseTime": 71,
+      "successRate": "100.0",
+      "totalTests": 8,
+      "errors": 0
+    },
+    {
+      "interval": "30 sekundi",
+      "intervalSeconds": 30,
+      "avgResponseTime": 28,
+      "minResponseTime": 13,
+      "maxResponseTime": 72,
+      "successRate": "100.0",
+      "totalTests": 6,
+      "errors": 0
+    },
+    {
+      "interval": "1 minut",
+      "intervalSeconds": 60,
+      "avgResponseTime": 26,
+      "minResponseTime": 20,
+      "maxResponseTime": 31,
+      "successRate": "100.0",
+      "totalTests": 5,
+      "errors": 0
+    },
+    {
+      "interval": "2 minuta",
+      "intervalSeconds": 120,
+      "avgResponseTime": 56,
+      "minResponseTime": 44,
+      "maxResponseTime": 76,
+      "successRate": "100.0",
+      "totalTests": 3,
+      "errors": 0
+    },
+    {
+      "interval": "5 minuta",
+      "intervalSeconds": 300,
+      "avgResponseTime": 184,
+      "minResponseTime": 19,
+      "maxResponseTime": 349,
+      "successRate": "100.0",
+      "totalTests": 2,
+      "errors": 0
+    }
+  ],
+  "optimal": {
+    "interval": "5 sekundi",
+    "intervalSeconds": 5,
+    "avgResponseTime": 32,
+    "minResponseTime": 14,
+    "maxResponseTime": 130,
+    "successRate": "100.0",
+    "totalTests": 10,
+    "errors": 0
+  }
+}

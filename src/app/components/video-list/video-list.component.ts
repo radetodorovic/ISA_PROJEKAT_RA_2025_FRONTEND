@@ -226,6 +226,9 @@ export class VideoListComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.selectedLatitude != null && this.selectedLongitude != null) {
       this.placeMarker(this.selectedLatitude, this.selectedLongitude);
       this.updateRadiusCircle();
+    } else {
+      // Ako nema sacuvane lokacije, automatski ucitaj trenutnu lokaciju korisnika
+      this.autoLoadUserLocation();
     }
 
     this.map.on('click', (e: L.LeafletMouseEvent) => {
@@ -234,6 +237,87 @@ export class VideoListComponent implements OnInit, AfterViewInit, OnDestroy {
       this.placeMarker(this.selectedLatitude, this.selectedLongitude);
       this.updateRadiusCircle();
       this.cdr.markForCheck();
+    });
+  }
+
+  private autoLoadUserLocation(): void {
+    if (!navigator.geolocation) {
+      console.warn('Geolocation nije podržan - koristim backend aproksimaciju.');
+      this.useBackendGeoIP();
+      return;
+    }
+    
+    // Prvo pokušaj tražiti preciznu lokaciju od korisnika
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        // Korisnik je dozvolio - koristi preciznu lokaciju
+        this.selectedLatitude = Number(pos.coords.latitude.toFixed(6));
+        this.selectedLongitude = Number(pos.coords.longitude.toFixed(6));
+        this.placeMarker(this.selectedLatitude, this.selectedLongitude);
+        this.updateRadiusCircle();
+        if (this.map) {
+          this.map.setView([this.selectedLatitude, this.selectedLongitude], 14);
+        }
+        console.log('✓ Precizna lokacija od korisnika:', { lat: this.selectedLatitude, lng: this.selectedLongitude });
+        this.loadTrending();
+        this.cdr.markForCheck();
+      },
+      (error) => {
+        // Korisnik je odbio ili greška - fallback na backend aproksimaciju
+        console.warn('Korisnik odbio lokaciju ili greška:', error.message);
+        console.log('→ Koristim backend aproksimaciju sa IP adrese...');
+        this.useBackendGeoIP();
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
+  private useBackendGeoIP(): void {
+    console.log('🌍 Pozivam backend /api/geoip za aproksimaciju...');
+    this.videoService.getUserLocationFromIP().subscribe({
+      next: (response) => {
+        console.log('Backend /api/geoip response:', response);
+        if ('error' in response) {
+          console.warn('❌ Backend GeoIP greška:', response.error);
+          console.warn('Postavljam default lokaciju (Beograd) i osvežavam trending');
+          // Postavi default koordinate da trending bude filtriran
+          this.selectedLatitude = 44.8176;
+          this.selectedLongitude = 20.4633;
+          this.placeMarker(this.selectedLatitude, this.selectedLongitude);
+          this.updateRadiusCircle();
+          if (this.map) {
+            this.map.setView([this.selectedLatitude, this.selectedLongitude], 14);
+          }
+          this.loadTrending();
+          this.cdr.markForCheck();
+        } else {
+          // Uspešno dobili aproksimaciju sa backend-a
+          this.selectedLatitude = Number(response.lat.toFixed(6));
+          this.selectedLongitude = Number(response.lon.toFixed(6));
+          this.placeMarker(this.selectedLatitude, this.selectedLongitude);
+          this.updateRadiusCircle();
+          if (this.map) {
+            this.map.setView([this.selectedLatitude, this.selectedLongitude], 14);
+          }
+          console.log('✓ Aproksimirana lokacija sa backend-a (IP):', { lat: this.selectedLatitude, lng: this.selectedLongitude });
+          this.loadTrending();
+          this.cdr.markForCheck();
+        }
+      },
+      error: (err) => {
+        console.error('❌ Backend GeoIP endpoint nedostupan:', err);
+        console.warn('Postavljam default lokaciju (Beograd) i osvežavam trending');
+        // Postavi default koordinate da trending bude filtriran
+        this.selectedLatitude = 44.8176;
+        this.selectedLongitude = 20.4633;
+        this.placeMarker(this.selectedLatitude, this.selectedLongitude);
+        this.updateRadiusCircle();
+        if (this.map) {
+          this.map.setView([this.selectedLatitude, this.selectedLongitude], 14);
+        }
+        this.loadTrending();
+        this.cdr.markForCheck();
+      }
     });
   }
 
