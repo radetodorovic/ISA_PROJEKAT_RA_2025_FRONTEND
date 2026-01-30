@@ -52,6 +52,7 @@ export class VideoUploadComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private map: L.Map | null = null;
   private marker: L.Marker | null = null;
+  private uploadMarkerIcon: L.Icon | null = null;
   
   ngOnInit(): void {
     // Proveri da li je korisnik ulogovan
@@ -75,10 +76,11 @@ export class VideoUploadComponent implements OnInit, AfterViewInit, OnDestroy {
     const container = document.getElementById('upload-map');
     if (!container) return;
 
-    L.Icon.Default.mergeOptions({
-      iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png'
+    this.uploadMarkerIcon = L.icon({
+      iconUrl: this.getClassicPinIconUrl(),
+      iconSize: [30, 42],
+      iconAnchor: [15, 42],
+      popupAnchor: [0, -36]
     });
 
     this.map = L.map(container).setView([44.8176, 20.4633], 12);
@@ -98,7 +100,9 @@ export class VideoUploadComponent implements OnInit, AfterViewInit, OnDestroy {
 
     if (this.map) {
       if (!this.marker) {
-        this.marker = L.marker([this.videoLatitude, this.videoLongitude]).addTo(this.map);
+        this.marker = L.marker([this.videoLatitude, this.videoLongitude], {
+          icon: this.uploadMarkerIcon || undefined
+        }).addTo(this.map);
       } else {
         this.marker.setLatLng([this.videoLatitude, this.videoLongitude]);
       }
@@ -107,6 +111,16 @@ export class VideoUploadComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.location.trim()) {
       this.location = `${this.videoLatitude}, ${this.videoLongitude}`;
     }
+  }
+
+  private getClassicPinIconUrl(): string {
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="30" height="42" viewBox="0 0 30 42">
+        <path d="M15 0C8.1 0 2.5 5.6 2.5 12.5C2.5 22 15 42 15 42C15 42 27.5 22 27.5 12.5C27.5 5.6 21.9 0 15 0Z" fill="#e53935"/>
+        <circle cx="15" cy="12.5" r="5.5" fill="#ffffff"/>
+      </svg>
+    `;
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg.trim())}`;
   }
 
   useMyLocationForVideo(): void {
