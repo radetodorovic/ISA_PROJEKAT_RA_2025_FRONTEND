@@ -11,9 +11,12 @@
 
   <!-- Video details -->
   <div *ngIf="video && !loading" class="video-content">
+    <div *ngIf="scheduledNotice" class="scheduled-notice">
+      <p>{{ scheduledNotice }}</p>
+    </div>
     <!-- Video player -->
-    <div class="player-wrapper">
-      <video controls class="video-player" [src]="getVideoUrl()"></video>
+    <div class="player-wrapper" *ngIf="!scheduledNotice">
+      <video controls class="video-player" [src]="getVideoUrl()" (loadedmetadata)="onVideoMetadata($event)"></video>
     </div>
 
     <!-- Video info -->
@@ -54,6 +57,7 @@
 
       <!-- Like button -->
       <button
+        *ngIf="!scheduledNotice"
         class="like-button"
         [class.liked]="liked"
         (click)="toggleLike()"
@@ -70,7 +74,7 @@
     </div>
 
     <!-- Comments section -->
-    <div class="comments-section">
+    <div class="comments-section" *ngIf="!scheduledNotice">
       <h2>Comments</h2>
 
       <!-- Comment form -->
@@ -140,5 +144,31 @@
         </div>
       </div>
     </div>
+
+    <div class="chat-section" *ngIf="!scheduledNotice">
+      <h2>Live Chat</h2>
+      <div class="chat-status">Status: {{ chatStatus }}</div>
+      <div class="chat-messages">
+        <div *ngFor="let msg of chatMessages" class="chat-message" [class.chat-join]="msg.type === 'JOIN'">
+          <div *ngIf="msg.type === 'CHAT'" class="chat-bubble">
+            <div class="chat-username">{{ msg.username }}</div>
+            <div class="chat-text">{{ msg.message }}</div>
+            <div class="chat-time">{{ msg.timestamp ? formatDate(msg.timestamp) : '' }}</div>
+          </div>
+          <div *ngIf="msg.type !== 'CHAT'" class="chat-system">{{ msg.message }}</div>
+        </div>
+      </div>
+      <div class="chat-input">
+        <input
+          type="text"
+          [(ngModel)]="chatInput"
+          placeholder="NapiÅ¡ite poruku..."
+          (keydown)="onChatKeydown($event)"
+          #chatInputEl
+        />
+        <button (click)="sendChatMessage()">PoÅ¡alji</button>
+      </div>
+    </div>
   </div>
 </div>
+

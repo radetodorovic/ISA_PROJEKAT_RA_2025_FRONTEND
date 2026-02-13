@@ -6,6 +6,7 @@
     <h3>✓ Video uspešno postavljen!</h3>
     <p><strong>Title:</strong> {{ uploadedVideo.title }}</p>
     <p><strong>ID:</strong> {{ uploadedVideo.id }}</p>
+    <p><strong>Transcoding:</strong> {{ getTranscodeSummary() }}</p>
     <p>Forma će biti resetovana za nekoliko sekundi...</p>
   </div>
 
@@ -105,6 +106,20 @@
       />
     </div>
 
+    <!-- Scheduled publish (Optional) -->
+    <div class="form-group">
+      <label for="scheduledAt">Schedule publish time (optional)</label>
+      <input
+        type="datetime-local"
+        id="scheduledAt"
+        name="scheduledAt"
+        [(ngModel)]="scheduledAtInput"
+        [disabled]="isUploading"
+        class="form-control"
+      />
+      <div class="help-text">If set, video becomes available exactly at the scheduled time.</div>
+    </div>
+
     <!-- Map Location Picker (Optional) -->
     <div class="form-group">
       <label>Pick location on map (optional)</label>
@@ -161,6 +176,23 @@
       </div>
       
       <div *ngIf="errors['video']" class="error-message">{{ errors['video'] }}</div>
+    </div>
+
+    <!-- Transcoding Options -->
+    <div class="form-group">
+      <label>Transcoding profiles (optional)</label>
+      <div class="transcode-options">
+        <label class="transcode-option" *ngFor="let profile of availableTranscodeProfiles">
+          <input
+            type="checkbox"
+            [checked]="selectedTranscodeProfiles.includes(profile.id)"
+            (change)="onTranscodeProfileToggle(profile.id, $any($event.target).checked)"
+            [disabled]="isUploading"
+          />
+          <span>{{ profile.label }}</span>
+        </label>
+      </div>
+      <div class="help-text">If none selected, backend defaults will be used.</div>
     </div>
 
     <!-- Upload Progress -->

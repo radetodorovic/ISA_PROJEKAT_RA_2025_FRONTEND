@@ -24,6 +24,13 @@ export class VideoUploadComponent implements OnInit, AfterViewInit, OnDestroy {
   location: string = '';
   videoLatitude: number | null = null;
   videoLongitude: number | null = null;
+  scheduledAtInput: string = '';
+  availableTranscodeProfiles = [
+    { id: '360p', label: '360p (640x360)' },
+    { id: '720p', label: '720p (1280x720)' },
+    { id: '1080p', label: '1080p (1920x1080)' }
+  ];
+  selectedTranscodeProfiles: string[] = ['360p', '720p'];
   
   // Fajlovi
   thumbnailFile: File | null = null;
@@ -206,6 +213,23 @@ export class VideoUploadComponent implements OnInit, AfterViewInit, OnDestroy {
   removeTag(tag: string): void {
     this.tags = this.tags.filter(t => t !== tag);
   }
+
+  onTranscodeProfileToggle(profileId: string, checked: boolean): void {
+    if (checked && !this.selectedTranscodeProfiles.includes(profileId)) {
+      this.selectedTranscodeProfiles = [...this.selectedTranscodeProfiles, profileId];
+      return;
+    }
+    if (!checked) {
+      this.selectedTranscodeProfiles = this.selectedTranscodeProfiles.filter(p => p !== profileId);
+    }
+  }
+
+  getTranscodeSummary(): string {
+    if (!this.selectedTranscodeProfiles || this.selectedTranscodeProfiles.length === 0) {
+      return 'default profiles';
+    }
+    return this.selectedTranscodeProfiles.join(', ');
+  }
   
   /**
    * Handle Enter key u tag input polju
@@ -274,7 +298,9 @@ export class VideoUploadComponent implements OnInit, AfterViewInit, OnDestroy {
       video: this.videoFile!,
       location: this.location.trim() || undefined,
       latitude: this.videoLatitude ?? undefined,
-      longitude: this.videoLongitude ?? undefined
+      longitude: this.videoLongitude ?? undefined,
+      transcodeProfiles: this.selectedTranscodeProfiles,
+      scheduledAt: this.scheduledAtInput ? this.scheduledAtInput : undefined
     };
     
     this.isUploading = true;
@@ -360,6 +386,8 @@ export class VideoUploadComponent implements OnInit, AfterViewInit, OnDestroy {
     this.location = '';
     this.videoLatitude = null;
     this.videoLongitude = null;
+    this.scheduledAtInput = '';
+    this.selectedTranscodeProfiles = ['360p', '720p'];
     this.thumbnailFile = null;
     this.videoFile = null;
     this.thumbnailPreview = null;

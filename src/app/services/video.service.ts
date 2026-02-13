@@ -118,7 +118,14 @@ export class VideoService {
     
     // Tags - šalju se kao jedan string odvojen zarezima
     formData.append('tags', request.tags.join(','));
-    
+    if (request.transcodeProfiles && request.transcodeProfiles.length > 0) {
+      request.transcodeProfiles.forEach((profile) => formData.append('transcodeProfiles', profile));
+    }
+
+    if (request.scheduledAt) {
+      formData.append('scheduledAt', request.scheduledAt);
+    }
+
     formData.append('thumbnail', request.thumbnail);
     formData.append('video', request.video);
     

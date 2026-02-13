@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
@@ -7,7 +7,9 @@ import { VideoService } from '../../services/video.service';
 import { AuthService } from '../../services/auth.service';
 import { VideoPost } from '../../models/video-post';
 import { Comment, PaginatedComments } from '../../models/comment';
+import { ChatMessage } from '../../models/chat-message';
 import { environment } from '../../config/environment';
+import { VideoChatService } from '../../services/video-chat.service';
 import { finalize } from 'rxjs/operators';
 
 @Component({
@@ -18,7 +20,7 @@ import { finalize } from 'rxjs/operators';
   styleUrl: './video-detail.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class VideoDetailComponent implements OnInit {
+export class VideoDetailComponent implements OnInit, OnDestroy {
   video: VideoPost | null = null;
   comments: Comment[] = [];
   liked: boolean = false;
@@ -28,6 +30,13 @@ export class VideoDetailComponent implements OnInit {
   commentsLoading: boolean = false;
   commentText: string = '';
   submitCommentLoading: boolean = false;
+  scheduledNotice: string = '';
+  private scheduledOffsetSeconds: number | null = null;
+  chatMessages: ChatMessage[] = [];
+  chatInput: string = '';
+  chatStatus: string = 'disconnected';
+  private chatUsername: string = 'Guest';
+  @ViewChild('chatInputEl') private chatInputEl?: ElementRef<HTMLInputElement>;
   
   // Paginacija
   currentPage: number = 0;
@@ -54,7 +63,8 @@ export class VideoDetailComponent implements OnInit {
     private videoService: VideoService,
     private authService: AuthService,
     private cdr: ChangeDetectorRef,
-    private http: HttpClient
+    private http: HttpClient,
+    private videoChatService: VideoChatService
   ) {}
 
   ngOnInit(): void {
@@ -62,14 +72,19 @@ export class VideoDetailComponent implements OnInit {
       this.videoId = Number(params['id']);
       if (this.videoId) {
         this.loadVideoDetails();
-        this.loadComments();
         this.loadUserCommentHistory();
       }
     });
   }
 
+  ngOnDestroy(): void {
+    this.videoChatService.disconnect();
+  }
+
   loadVideoDetails(): void {
     this.loading = true;
+    this.scheduledNotice = '';
+    this.scheduledOffsetSeconds = null;
     console.log('[VideoDetail] Loading video', this.videoId);
     this.videoService
       .getAllVideos()
@@ -88,8 +103,15 @@ export class VideoDetailComponent implements OnInit {
           if (!this.video) {
             this.error = 'Video not found';
           } else {
+            if (this.isScheduledInFuture()) {
+              this.scheduledNotice = `Video je zakazan za ${this.formatDate(this.video.scheduledAt as string)}.`;
+              this.cdr.markForCheck();
+              return;
+            }
             // Fetch video kao Blob sa Authorization header-om
             this.loadVideoBlob();
+            this.loadComments();
+            this.startChat();
           }
         },
         error: (err) => {
@@ -100,6 +122,12 @@ export class VideoDetailComponent implements OnInit {
   }
 
   loadComments(): void {
+    if (this.video && this.isScheduledInFuture()) {
+      this.comments = [];
+      this.commentsLoading = false;
+      this.cdr.markForCheck();
+      return;
+    }
     this.commentsLoading = true;
     console.log('[VideoDetail] Loading comments for video', this.videoId, 'page', this.currentPage);
     
@@ -390,6 +418,9 @@ export class VideoDetailComponent implements OnInit {
 
   loadVideoBlob(): void {
     if (!this.video) return;
+    if (this.isScheduledInFuture()) {
+      return;
+    }
     const url = (this.video as any).videoUrl || (this.video as any).videoUrl1 || '';
     if (!url) return;
 
@@ -401,6 +432,7 @@ export class VideoDetailComponent implements OnInit {
       next: (blob: Blob) => {
         console.log('[VideoDetail] Blob received, size:', blob.size, 'type:', blob.type);
         this.videoUrl = URL.createObjectURL(blob);
+        this.scheduledOffsetSeconds = this.getScheduleOffsetSeconds();
         this.cdr.markForCheck();
         console.log('[VideoDetail] Video blob URL created:', this.videoUrl);
       },
@@ -418,5 +450,83 @@ export class VideoDetailComponent implements OnInit {
 
   formatDate(dateString: string): string {
     return new Date(dateString).toLocaleString();
+  }
+
+  startChat(): void {
+    const userId = this.authService.getUserId();
+    this.chatUsername = userId ? `User ${userId}` : 'Guest';
+    this.videoChatService.connect(
+      this.videoId,
+      this.chatUsername,
+      (msg) => {
+        this.chatMessages = [...this.chatMessages, msg];
+        this.cdr.markForCheck();
+      },
+      (status) => {
+        this.chatStatus = status;
+        this.cdr.markForCheck();
+      }
+    );
+    // Ensure the chat input is focusable even if user has trouble clicking.
+    setTimeout(() => this.chatInputEl?.nativeElement.focus(), 0);
+  }
+
+  sendChatMessage(): void {
+    if (!this.chatInput.trim()) return;
+    this.videoChatService.sendMessage(this.videoId, this.chatUsername, this.chatInput);
+    this.chatInput = '';
+  }
+
+  // Fallback: manually update chat input if key events are blocked.
+  onChatKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      this.sendChatMessage();
+      return;
+    }
+    if (event.ctrlKey || event.metaKey || event.altKey) {
+      return;
+    }
+    if (event.key === 'Backspace') {
+      event.preventDefault();
+      this.chatInput = this.chatInput.slice(0, -1);
+      this.cdr.markForCheck();
+      return;
+    }
+    if (event.key.length === 1) {
+      event.preventDefault();
+      this.chatInput += event.key;
+      this.cdr.markForCheck();
+    }
+  }
+
+  onVideoMetadata(event: Event): void {
+    const videoEl = event.target as HTMLVideoElement;
+    if (!videoEl || this.scheduledOffsetSeconds === null) {
+      return;
+    }
+    const duration = videoEl.duration || 0;
+    const offset = Math.max(0, this.scheduledOffsetSeconds);
+    if (duration > 0) {
+      videoEl.currentTime = Math.min(duration - 0.1, offset);
+    }
+  }
+
+  private getScheduledAtMs(): number | null {
+    if (!this.video?.scheduledAt) return null;
+    const ms = new Date(this.video.scheduledAt).getTime();
+    return Number.isNaN(ms) ? null : ms;
+  }
+
+  private getScheduleOffsetSeconds(): number | null {
+    const scheduledAtMs = this.getScheduledAtMs();
+    if (scheduledAtMs === null) return null;
+    const diffMs = Date.now() - scheduledAtMs;
+    return Math.max(0, Math.floor(diffMs / 1000));
+  }
+
+  isScheduledInFuture(): boolean {
+    const scheduledAtMs = this.getScheduledAtMs();
+    return scheduledAtMs !== null && Date.now() < scheduledAtMs;
   }
 }

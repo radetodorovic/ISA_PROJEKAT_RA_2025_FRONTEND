@@ -7,6 +7,7 @@ export interface VideoPost {
   videoUrl?: string;
   videoSize?: number;
   createdAt?: string;
+  scheduledAt?: string;
   uploadedAt?: string;
   location?: string;
   latitude?: number;
@@ -30,4 +31,6 @@ export interface VideoUploadRequest {
   location?: string;
   latitude?: number;
   longitude?: number;
+  transcodeProfiles?: string[];
+  scheduledAt?: string;
 }
