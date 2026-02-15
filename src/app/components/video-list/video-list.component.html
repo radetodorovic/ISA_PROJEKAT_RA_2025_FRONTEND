@@ -9,6 +9,135 @@
     </div>
   </div>
 
+  <div *ngIf="authService.isAuthenticated()" class="watch-party-section">
+    <div class="section-header">
+      <div class="section-title">
+        <h2>Watch Party</h2>
+        <span *ngIf="watchPartyRoomId" class="watch-party-meta">
+          Room ID: {{ watchPartyRoomId }}
+        </span>
+      </div>
+      <div class="header-actions">
+        <button (click)="createWatchParty()" class="btn btn-primary" [disabled]="watchPartyStatus === 'creating'">
+          Create Room
+        </button>
+        <button (click)="leaveWatchParty()" class="btn btn-secondary" [disabled]="!watchPartyActive">
+          Leave
+        </button>
+      </div>
+    </div>
+
+    <div class="watch-party-controls">
+      <div class="watch-party-join">
+        <label for="watchPartyJoinId">Join Room</label>
+        <input
+          id="watchPartyJoinId"
+          type="text"
+          class="trending-input"
+          placeholder="Enter room ID"
+          [(ngModel)]="watchPartyJoinId"
+        />
+        <button (click)="joinWatchParty()" class="btn btn-secondary" [disabled]="watchPartyStatus === 'joining'">
+          Join
+        </button>
+      </div>
+      <div class="watch-party-status" *ngIf="watchPartyStatus">
+        Status: {{ watchPartyStatus }}
+      </div>
+    </div>
+
+    <div *ngIf="watchPartyError" class="error-message">
+      {{ watchPartyError }}
+    </div>
+
+    <div class="watch-party-hint">
+      <p *ngIf="watchPartyIsHost">
+        You are the host. Click "Start in Party" on a video to open it for everyone in the room.
+      </p>
+      <p *ngIf="watchPartyActive && !watchPartyIsHost">
+        Waiting for host to start a video...
+      </p>
+    </div>
+  </div>
+
+  <div *ngIf="authService.isAuthenticated()" class="popular-section">
+    <div class="section-header">
+      <div class="section-title">
+        <h2>Popular This Week</h2>
+        <span *ngIf="getPopularRunAt()" class="popular-meta">
+          Last updated: {{ getPopularRunAt() | date:'medium' }}
+        </span>
+      </div>
+      <div class="header-actions">
+        <button (click)="runPopularPipeline()" class="btn btn-primary" [disabled]="popularLoading">
+          Run Popular
+        </button>
+        <button (click)="loadPopular()" class="btn btn-secondary" [disabled]="popularLoading">
+          {{ popularLoading ? 'Loading...' : 'Refresh' }}
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="popularLoading" class="loading">
+      <p>Loading popular videos...</p>
+    </div>
+
+    <div *ngIf="popularRunMessage" class="success-message">
+      {{ popularRunMessage }}
+    </div>
+
+    <div *ngIf="popularError" class="error-message">
+      {{ popularError }}
+      <button (click)="loadPopular()" class="btn btn-secondary">Try Again</button>
+    </div>
+
+    <div *ngIf="!popularLoading && !popularError && popular.length === 0" class="no-videos">
+      <p>No popular videos available yet.</p>
+    </div>
+
+    <div *ngIf="!popularLoading && popular.length > 0" class="videos-grid">
+      <div *ngFor="let item of popular" class="video-card popular-card">
+        <div class="thumbnail-container">
+          <img [src]="getThumbnailUrl(item.video)" [alt]="item.video.title" class="thumbnail" />
+          <div class="video-duration">
+            <span>{{ formatFileSize(item.video.videoSize || 0) }}</span>
+          </div>
+          <div class="popular-badge">#{{ item.rank }}</div>
+        </div>
+
+        <div class="video-info">
+          <div class="popular-score">
+            <span class="icon">🔥</span>
+            <span>{{ item.score }} score</span>
+          </div>
+          <h3 class="video-title">{{ item.video.title }}</h3>
+          <p class="video-description">{{ item.video.description }}</p>
+
+          <div class="video-meta">
+            <div class="meta-item">
+              <span class="icon">👁️</span>
+              <span>{{ item.video.viewCount }} views</span>
+            </div>
+          </div>
+
+          <div class="video-footer">
+            <span class="video-date">ETL run: {{ item.runAt | date:'medium' }}</span>
+            <span *ngIf="item.video.location" class="video-location">📍 {{ item.video.location }}</span>
+          </div>
+
+          <a [routerLink]="['/videos', item.video.id]" class="btn btn-watch">Watch Video</a>
+          <button
+            *ngIf="canStartWatchParty() && item.video?.id"
+            (click)="startWatchParty(item.video.id)"
+            class="btn btn-secondary"
+          >
+            Start in Party
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div *ngIf="authService.isAuthenticated()" class="trending-section">
     <div class="section-header">
       <h2>Trending Near You</h2>
@@ -108,6 +237,13 @@
           </div>
 
           <a [routerLink]="['/videos', item.video.id]" class="btn btn-watch">Watch Video</a>
+          <button
+            *ngIf="canStartWatchParty() && item.video?.id"
+            (click)="startWatchParty(item.video.id)"
+            class="btn btn-secondary"
+          >
+            Start in Party
+          </button>
         </div>
       </div>
     </div>
@@ -179,6 +315,13 @@
         </div>
 
         <a [routerLink]="['/videos', video.id]" class="btn btn-watch">Watch Video</a>
+        <button
+          *ngIf="canStartWatchParty() && video?.id"
+          (click)="startWatchParty(video.id)"
+          class="btn btn-secondary"
+        >
+          Start in Party
+        </button>
       </div>
     </div>
   </div>

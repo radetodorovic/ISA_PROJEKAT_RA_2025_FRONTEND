@@ -1,13 +1,17 @@
 import { Component, OnInit, AfterViewInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule, ActivatedRoute } from '@angular/router';
+import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { VideoService } from '../../services/video.service';
 import { finalize } from 'rxjs/operators';
 import { VideoPost } from '../../models/video-post';
 import { environment } from '../../config/environment';
 import { TrendingVideo } from '../../models/trending-video';
+import { PopularVideo } from '../../models/popular-video';
 import { AuthService } from '../../services/auth.service';
+import { WatchPartyService } from '../../services/watch-party.service';
+import { WatchPartyRoom } from '../../models/watch-party-room';
+import { WatchPartyStart } from '../../models/watch-party-start';
 import * as L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -22,9 +26,19 @@ import 'leaflet/dist/leaflet.css';
 export class VideoListComponent implements OnInit, AfterViewInit, OnDestroy {
   videos: VideoPost[] = [];
   trending: TrendingVideo[] = [];
+  popular: PopularVideo[] = [];
   trendingLoading: boolean = false;
   trendingError: string = '';
   trendingRunMessage: string = '';
+  popularLoading: boolean = false;
+  popularError: string = '';
+  popularRunMessage: string = '';
+  watchPartyRoomId: string = '';
+  watchPartyJoinId: string = '';
+  watchPartyStatus: string = '';
+  watchPartyError: string = '';
+  watchPartyIsHost: boolean = false;
+  watchPartyActive: boolean = false;
   selectedLatitude: number | null = null;
   selectedLongitude: number | null = null;
   radiusMeters: number = 200;
@@ -40,6 +54,8 @@ export class VideoListComponent implements OnInit, AfterViewInit, OnDestroy {
     private videoService: VideoService,
     private cdr: ChangeDetectorRef,
     private route: ActivatedRoute,
+    private router: Router,
+    private watchPartyService: WatchPartyService,
     public authService: AuthService
   ) {}
 
@@ -48,6 +64,7 @@ export class VideoListComponent implements OnInit, AfterViewInit, OnDestroy {
     this.loadVideos();
     if (this.authService.isAuthenticated()) {
       this.loadSavedLocation();
+      this.loadPopular();
       this.loadTrending();
     }
 
@@ -57,6 +74,7 @@ export class VideoListComponent implements OnInit, AfterViewInit, OnDestroy {
       this.loadVideos();
       if (this.authService.isAuthenticated()) {
         this.loadSavedLocation();
+        this.loadPopular();
         this.loadTrending();
       }
     });
@@ -74,6 +92,7 @@ export class VideoListComponent implements OnInit, AfterViewInit, OnDestroy {
       this.map.remove();
       this.map = null;
     }
+    this.watchPartyService.disconnect();
   }
 
   loadVideos(): void {
@@ -155,6 +174,142 @@ export class VideoListComponent implements OnInit, AfterViewInit, OnDestroy {
           this.cdr.markForCheck();
         }
       });
+  }
+
+  loadPopular(): void {
+    this.popularLoading = true;
+    this.popularError = '';
+    this.popularRunMessage = '';
+    this.videoService
+      .getPopularVideos()
+      .pipe(
+        finalize(() => {
+          this.popularLoading = false;
+          this.cdr.markForCheck();
+        })
+      )
+      .subscribe({
+        next: (items) => {
+          this.popular = Array.isArray(items) ? items : [];
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          console.error('Error loading popular videos:', err);
+          if (err?.status === 401) {
+            this.popularError = 'Please login to view popular videos.';
+          } else {
+            this.popularError = 'Failed to load popular videos.';
+          }
+          this.cdr.markForCheck();
+        }
+      });
+  }
+
+  runPopularPipeline(): void {
+    this.popularLoading = true;
+    this.popularError = '';
+    this.popularRunMessage = '';
+    this.videoService.runPopularPipeline().subscribe({
+      next: () => {
+        this.popularRunMessage = 'Popular pipeline pokrenut. Osvezavam listu...';
+        this.loadPopular();
+      },
+      error: (err) => {
+        console.error('Error running popular pipeline:', err);
+        if (err?.status === 401) {
+          this.popularError = 'Please login to run the popular pipeline.';
+        } else {
+          this.popularError = 'Failed to run popular pipeline.';
+        }
+        this.popularLoading = false;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  getPopularRunAt(): string | null {
+    if (!Array.isArray(this.popular) || this.popular.length === 0) {
+      return null;
+    }
+    return this.popular[0]?.runAt ?? null;
+  }
+
+  createWatchParty(): void {
+    this.watchPartyError = '';
+    this.watchPartyStatus = 'creating';
+    this.watchPartyService.createRoom().subscribe({
+      next: (room: WatchPartyRoom) => {
+        this.watchPartyRoomId = room.roomId;
+        this.watchPartyJoinId = room.roomId;
+        this.watchPartyIsHost = true;
+        this.connectWatchParty(room.roomId);
+      },
+      error: () => {
+        this.watchPartyError = 'Failed to create watch party room.';
+        this.watchPartyStatus = '';
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  joinWatchParty(): void {
+    const roomId = this.watchPartyJoinId.trim();
+    if (!roomId) {
+      this.watchPartyError = 'Enter a room ID to join.';
+      return;
+    }
+    this.watchPartyError = '';
+    this.watchPartyStatus = 'joining';
+    this.watchPartyService.getRoom(roomId).subscribe({
+      next: () => {
+        this.watchPartyRoomId = roomId;
+        this.watchPartyIsHost = false;
+        this.connectWatchParty(roomId);
+      },
+      error: () => {
+        this.watchPartyError = 'Room not found.';
+        this.watchPartyStatus = '';
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  leaveWatchParty(): void {
+    this.watchPartyService.disconnect();
+    this.watchPartyActive = false;
+    this.watchPartyIsHost = false;
+    this.watchPartyRoomId = '';
+    this.watchPartyStatus = '';
+    this.cdr.markForCheck();
+  }
+
+  startWatchParty(videoId?: number): void {
+    if (!videoId || !this.watchPartyActive || !this.watchPartyIsHost || !this.watchPartyRoomId) {
+      return;
+    }
+    const startedBy = this.authService.getUserId();
+    this.watchPartyService.sendStart(this.watchPartyRoomId, videoId, startedBy);
+    this.router.navigate(['/videos', videoId]);
+  }
+
+  canStartWatchParty(): boolean {
+    return this.watchPartyActive && this.watchPartyIsHost;
+  }
+
+  private connectWatchParty(roomId: string): void {
+    this.watchPartyService.connect(
+      roomId,
+      (msg: WatchPartyStart) => {
+        if (msg?.videoId) {
+          this.router.navigate(['/videos', msg.videoId]);
+        }
+      },
+      (status: string) => {
+        this.watchPartyStatus = status;
+        this.watchPartyActive = status === 'connected';
+        this.cdr.markForCheck();
+      }
+    );
   }
 
   runTrendingPipeline(): void {

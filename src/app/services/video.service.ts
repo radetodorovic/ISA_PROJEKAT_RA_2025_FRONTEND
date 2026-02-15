@@ -6,6 +6,7 @@ import { VideoPost, VideoUploadRequest } from '../models/video-post';
 import { Comment, PaginatedComments } from '../models/comment';
 import { AuthService } from './auth.service';
 import { TrendingVideo } from '../models/trending-video';
+import { PopularVideo } from '../models/popular-video';
 
 @Injectable({
   providedIn: 'root',
@@ -56,6 +57,24 @@ export class VideoService {
     }
     const params = paramsList.length > 0 ? `?${paramsList.join('&')}` : '';
     return this.http.get<TrendingVideo[]>(`http://localhost:8080/api/trending${params}`, { headers });
+  }
+
+  /**
+   * Get popular videos (last ETL run)
+   */
+  getPopularVideos(): Observable<PopularVideo[]> {
+    const token = this.authService.getToken();
+    const headers = token ? new HttpHeaders().set('Authorization', `Bearer ${token}`) : new HttpHeaders();
+    return this.http.get<PopularVideo[]>('http://localhost:8080/api/popular', { headers });
+  }
+
+  /**
+   * Trigger popular pipeline manually (requires auth)
+   */
+  runPopularPipeline(): Observable<any> {
+    const token = this.authService.getToken();
+    const headers = token ? new HttpHeaders().set('Authorization', `Bearer ${token}`) : new HttpHeaders();
+    return this.http.post('http://localhost:8080/api/popular/run', {}, { headers, responseType: 'text' });
   }
 
   /**
