@@ -1,7 +1,10 @@
 import axios, { InternalAxiosRequestConfig } from 'axios';
 
-// Base URL is provided via Vite define in vite.config.ts; fallback to localhost
-const API_BASE_URL: string = (globalThis as any).__VITE_API_BASE_URL__ || 'http://localhost:8080';
+// Base URL is provided via Vite define in vite.config.ts; fallback to host:8080
+const API_BASE_URL: string = (globalThis as any).__VITE_API_BASE_URL__ ||
+  (typeof window !== 'undefined'
+    ? `${window.location.protocol}//${window.location.hostname}:8080`
+    : 'http://localhost:8080');
 
 export interface Video {
   id: number;

@@ -7,12 +7,13 @@ import { Comment, PaginatedComments } from '../models/comment';
 import { AuthService } from './auth.service';
 import { TrendingVideo } from '../models/trending-video';
 import { PopularVideo } from '../models/popular-video';
+import { environment } from '../config/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class VideoService {
-  private readonly API_URL = 'http://localhost:8080/api/videos';
+  private readonly API_URL = `${environment.apiBaseUrl}/api/videos`;
   private readonly MAX_VIDEO_SIZE = 200 * 1024 * 1024; // 200MB
   private readonly UPLOAD_TIMEOUT = 600000; // 10 minuta
   private readonly COMMENTS_CACHE_DURATION = 5 * 60 * 1000; // 5 minuta
@@ -56,7 +57,7 @@ export class VideoService {
       paramsList.push(`radiusMeters=${encodeURIComponent(options.radiusMeters)}`);
     }
     const params = paramsList.length > 0 ? `?${paramsList.join('&')}` : '';
-    return this.http.get<TrendingVideo[]>(`http://localhost:8080/api/trending${params}`, { headers });
+    return this.http.get<TrendingVideo[]>(`${environment.apiBaseUrl}/api/trending${params}`, { headers });
   }
 
   /**
@@ -65,7 +66,7 @@ export class VideoService {
   getPopularVideos(): Observable<PopularVideo[]> {
     const token = this.authService.getToken();
     const headers = token ? new HttpHeaders().set('Authorization', `Bearer ${token}`) : new HttpHeaders();
-    return this.http.get<PopularVideo[]>('http://localhost:8080/api/popular', { headers });
+    return this.http.get<PopularVideo[]>(`${environment.apiBaseUrl}/api/popular`, { headers });
   }
 
   /**
@@ -74,7 +75,7 @@ export class VideoService {
   runPopularPipeline(): Observable<any> {
     const token = this.authService.getToken();
     const headers = token ? new HttpHeaders().set('Authorization', `Bearer ${token}`) : new HttpHeaders();
-    return this.http.post('http://localhost:8080/api/popular/run', {}, { headers, responseType: 'text' });
+    return this.http.post(`${environment.apiBaseUrl}/api/popular/run`, {}, { headers, responseType: 'text' });
   }
 
   /**
@@ -83,7 +84,7 @@ export class VideoService {
   runTrendingPipeline(): Observable<any> {
     const token = this.authService.getToken();
     const headers = token ? new HttpHeaders().set('Authorization', `Bearer ${token}`) : new HttpHeaders();
-    return this.http.post(`http://localhost:8080/api/trending/run`, {}, { headers, responseType: 'text' });
+    return this.http.post(`${environment.apiBaseUrl}/api/trending/run`, {}, { headers, responseType: 'text' });
   }
 
   /**
@@ -92,7 +93,7 @@ export class VideoService {
   getUserLocationFromIP(): Observable<{ lat: number; lon: number } | { error: string }> {
     const token = this.authService.getToken();
     const headers = token ? new HttpHeaders().set('Authorization', `Bearer ${token}`) : new HttpHeaders();
-    return this.http.get<{ lat: number; lon: number } | { error: string }>('http://localhost:8080/api/geoip', { headers });
+    return this.http.get<{ lat: number; lon: number } | { error: string }>(`${environment.apiBaseUrl}/api/geoip`, { headers });
   }
 
   /**
