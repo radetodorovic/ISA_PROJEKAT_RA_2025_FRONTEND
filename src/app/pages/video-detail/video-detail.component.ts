@@ -32,6 +32,9 @@ export class VideoDetailComponent implements OnInit, OnDestroy {
   submitCommentLoading: boolean = false;
   scheduledNotice: string = '';
   private scheduledOffsetSeconds: number | null = null;
+  strictSyncMode: boolean = false;
+  private syncIntervalId: number | null = null;
+  private suppressSeekCorrection = false;
   chatMessages: ChatMessage[] = [];
   chatInput: string = '';
   chatStatus: string = 'disconnected';
@@ -78,6 +81,7 @@ export class VideoDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.stopStrictSyncTicker();
     this.videoChatService.disconnect();
   }
 
@@ -85,6 +89,8 @@ export class VideoDetailComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.scheduledNotice = '';
     this.scheduledOffsetSeconds = null;
+    this.strictSyncMode = false;
+    this.stopStrictSyncTicker();
     console.log('[VideoDetail] Loading video', this.videoId);
     this.videoService
       .getAllVideos()
@@ -108,6 +114,7 @@ export class VideoDetailComponent implements OnInit, OnDestroy {
               this.cdr.markForCheck();
               return;
             }
+            this.strictSyncMode = this.isStrictSyncVideo();
             // Fetch video kao Blob sa Authorization header-om
             this.loadVideoBlob();
             this.loadComments();
@@ -505,10 +512,47 @@ export class VideoDetailComponent implements OnInit, OnDestroy {
     if (!videoEl || this.scheduledOffsetSeconds === null) {
       return;
     }
-    const duration = videoEl.duration || 0;
-    const offset = Math.max(0, this.scheduledOffsetSeconds);
-    if (duration > 0) {
-      videoEl.currentTime = Math.min(duration - 0.1, offset);
+    this.strictSyncMode = this.isStrictSyncVideo();
+    this.enforceStrictSync(videoEl, true);
+    this.startStrictSyncTicker(videoEl);
+    if (this.strictSyncMode) {
+      videoEl.play().catch(() => {});
+    }
+  }
+
+  onVideoSeeking(event: Event): void {
+    if (!this.strictSyncMode || this.suppressSeekCorrection) {
+      return;
+    }
+    const videoEl = event.target as HTMLVideoElement;
+    this.enforceStrictSync(videoEl, true);
+  }
+
+  onVideoPause(event: Event): void {
+    if (!this.strictSyncMode) {
+      return;
+    }
+    const videoEl = event.target as HTMLVideoElement;
+    if (!videoEl.ended) {
+      videoEl.play().catch(() => {});
+    }
+  }
+
+  onVideoPlay(event: Event): void {
+    if (!this.strictSyncMode) {
+      return;
+    }
+    const videoEl = event.target as HTMLVideoElement;
+    this.enforceStrictSync(videoEl, true);
+  }
+
+  onVideoClick(event: Event): void {
+    if (!this.strictSyncMode) {
+      return;
+    }
+    const videoEl = event.target as HTMLVideoElement;
+    if (videoEl.paused && !videoEl.ended) {
+      videoEl.play().catch(() => {});
     }
   }
 
@@ -523,6 +567,52 @@ export class VideoDetailComponent implements OnInit, OnDestroy {
     if (scheduledAtMs === null) return null;
     const diffMs = Date.now() - scheduledAtMs;
     return Math.max(0, Math.floor(diffMs / 1000));
+  }
+
+  private isStrictSyncVideo(): boolean {
+    return !!this.video?.scheduledAt && !this.isScheduledInFuture();
+  }
+
+  private enforceStrictSync(videoEl: HTMLVideoElement, force: boolean): void {
+    if (!videoEl) {
+      return;
+    }
+    const offset = this.getScheduleOffsetSeconds();
+    if (offset === null) {
+      return;
+    }
+
+    const duration = videoEl.duration || 0;
+    let target = Math.max(0, offset);
+    if (duration > 0) {
+      target = Math.min(Math.max(0, duration - 0.1), target);
+    }
+
+    const drift = Math.abs(videoEl.currentTime - target);
+    if (force || drift > 0.75) {
+      this.suppressSeekCorrection = true;
+      videoEl.currentTime = target;
+      setTimeout(() => {
+        this.suppressSeekCorrection = false;
+      }, 0);
+    }
+  }
+
+  private startStrictSyncTicker(videoEl: HTMLVideoElement): void {
+    this.stopStrictSyncTicker();
+    if (!this.strictSyncMode) {
+      return;
+    }
+    this.syncIntervalId = window.setInterval(() => {
+      this.enforceStrictSync(videoEl, false);
+    }, 1000);
+  }
+
+  private stopStrictSyncTicker(): void {
+    if (this.syncIntervalId !== null) {
+      window.clearInterval(this.syncIntervalId);
+      this.syncIntervalId = null;
+    }
   }
 
   isScheduledInFuture(): boolean {

@@ -16,7 +16,16 @@
     </div>
     <!-- Video player -->
     <div class="player-wrapper" *ngIf="!scheduledNotice">
-      <video controls class="video-player" [src]="getVideoUrl()" (loadedmetadata)="onVideoMetadata($event)"></video>
+      <video
+        [controls]="!strictSyncMode"
+        class="video-player"
+        [src]="getVideoUrl()"
+        (loadedmetadata)="onVideoMetadata($event)"
+        (seeking)="onVideoSeeking($event)"
+        (pause)="onVideoPause($event)"
+        (play)="onVideoPlay($event)"
+        (click)="onVideoClick($event)"
+      ></video>
     </div>
 
     <!-- Video info -->
